@@ -13,13 +13,17 @@ struct Node {
 pub struct Matrix {
     pool: Vec<Node>, // head: 0, columns: 1..col_size
     col_size: Vec<usize>,
+    row_cnt: usize,
+    col_cnt: usize,
 }
 
 impl Default for Matrix {
     fn default() -> Matrix {
         Matrix {
-            pool: vec![Default::default()],
+            pool: vec![Node::default()],
             col_size: vec![0],
+            row_cnt: 0,
+            col_cnt: 0,
         }
     }
 }
@@ -27,32 +31,36 @@ impl Default for Matrix {
 impl Matrix {
     const HEAD: usize = 0;
 
-    pub fn new(col_count: usize, rows: Vec<Vec<usize>>) -> Matrix {
+    pub fn new(col_cnt: usize, rows: Vec<Vec<usize>>) -> Matrix {
         let mut mat = Matrix::default();
-        mat.col_size = vec![0; col_count+1];
+        mat.col_cnt = col_cnt;
+        mat.col_size = vec![0; col_cnt + 1];
 
-        for col_num in 1..=col_count {
+        for col_num in 1..=col_cnt {
             let col = mat.create_node(0, col_num);
             mat.insert_right(col-1, col);
         }
-
-        for row_num in 1..=rows.len() {
-            let row = &rows[row_num-1]; // 1-based into 0-based
-            let mut left_node = 0;
-
-            for &col_num in row {
-                assert!(1 <= col_num && col_num <= col_count); // TODO: write proper validation logic
-                let node = mat.create_node(row_num, col_num);
-
-                mat.insert_down(mat.pool[col_num].up, node);
-                if left_node != 0 { mat.insert_right(left_node, node); }
-
-                mat.col_size[col_num] += 1;
-                left_node = node;
-            }
-        }
+        
+        for row in &rows { mat.add_row(row) }
 
         mat
+    }
+
+    pub fn add_row(&mut self, row: &Vec<usize>) {
+        self.row_cnt += 1;
+        let row_num = self.row_cnt;
+        let mut left_node = 0;
+
+        for &col_num in row {
+            assert!(1 <= col_num && col_num <= self.col_cnt); // TODO: write proper validation logic
+            let node = self.create_node(row_num, col_num);
+
+            self.insert_down(self.pool[col_num].up, node);
+            if left_node != 0 { self.insert_right(left_node, node); }
+
+            self.col_size[col_num] += 1;
+            left_node = node;
+        }
     }
 
     pub fn search(&mut self) -> Vec<Vec<usize>> {
