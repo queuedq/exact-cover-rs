@@ -11,19 +11,19 @@ struct Node {
 
 #[derive(Debug)]
 pub struct Matrix {
-    pool: Vec<Node>, // head: 0, columns: 1..col_size
-    col_size: Vec<usize>,
     row_cnt: usize,
     col_cnt: usize,
+    pool: Vec<Node>, // head: 0, columns: 1..col_size
+    col_size: Vec<usize>,
 }
 
 impl Default for Matrix {
     fn default() -> Matrix {
         Matrix {
-            pool: vec![Node::default()],
-            col_size: vec![0],
             row_cnt: 0,
             col_cnt: 0,
+            pool: vec![Node::default()],
+            col_size: vec![0],
         }
     }
 }
@@ -31,18 +31,22 @@ impl Default for Matrix {
 impl Matrix {
     const HEAD: usize = 0;
 
-    pub fn new(col_cnt: usize, rows: Vec<Vec<usize>>) -> Matrix {
-        let mut mat = Matrix::default();
-        mat.col_cnt = col_cnt;
-        mat.col_size = vec![0; col_cnt + 1];
-
+    pub fn new(col_cnt: usize) -> Matrix {
+        let mut mat = Matrix {
+            col_cnt,
+            col_size: vec![0; col_cnt + 1],
+            ..Matrix::default()
+        };
         for col_num in 1..=col_cnt {
             let col = mat.create_node(0, col_num);
-            mat.insert_right(col-1, col);
+            mat.insert_right(col - 1, col);
         }
-        
-        for row in &rows { mat.add_row(row) }
+        mat
+    }
 
+    pub fn with_rows(col_cnt: usize, rows: Vec<Vec<usize>>) -> Matrix {
+        let mut mat = Matrix::new(col_cnt);
+        for row in &rows { mat.add_row(row) }
         mat
     }
 
@@ -184,7 +188,7 @@ mod tests {
 
     #[test]
     fn matrix_search_should_solve_exact_cover() {
-        let mut mat = Matrix::new(
+        let mut mat = Matrix::with_rows(
             7,
             vec![
                 vec![3, 5, 6],
@@ -201,7 +205,7 @@ mod tests {
 
     #[test]
     fn matrix_search_should_find_multiple_solutions() {
-        let mut mat = Matrix::new(
+        let mut mat = Matrix::with_rows(
             4,
             vec![vec![1], vec![2], vec![3], vec![4], vec![1, 3], vec![2, 4]],
         );

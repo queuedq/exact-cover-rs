@@ -3,7 +3,7 @@ use exact_cover::{Matrix};
 
 fn main() {
     // First problem
-    let mut mat = Matrix::new(
+    let mut mat = Matrix::with_rows(
         7,
         vec![
             vec![3, 5, 6],
@@ -18,7 +18,7 @@ fn main() {
     println!("First problem: {:?}", solutions);
 
     // Second problem
-    mat = Matrix::new(
+    mat = Matrix::with_rows(
         4,
         vec![vec![1], vec![2], vec![3], vec![4], vec![1, 3], vec![2, 4]],
     );
