@@ -11,9 +11,8 @@ struct Node {
 
 #[derive(Debug)]
 pub struct Matrix {
-    pool: Vec<Node>,
+    pool: Vec<Node>, // head: 0, columns: 1..col_size
     col_size: Vec<usize>,
-    head: usize,
 }
 
 impl Default for Matrix {
@@ -21,22 +20,20 @@ impl Default for Matrix {
         Matrix {
             pool: vec![Default::default()],
             col_size: vec![0],
-            head: 0,
         }
     }
 }
 
 impl Matrix {
+    const HEAD: usize = 0;
+
     pub fn new(col_count: usize, rows: Vec<Vec<usize>>) -> Matrix {
         let mut mat = Matrix::default();
         mat.col_size = vec![0; col_count+1];
-        let mut up_node = Vec::new();
-        up_node.push(mat.head);
 
         for col_num in 1..=col_count {
             let col = mat.create_node(0, col_num);
             mat.insert_right(col-1, col);
-            up_node.push(col);
         }
 
         for row_num in 1..=rows.len() {
@@ -47,11 +44,10 @@ impl Matrix {
                 assert!(1 <= col_num && col_num <= col_count); // TODO: write proper validation logic
                 let node = mat.create_node(row_num, col_num);
 
-                mat.insert_down(up_node[col_num], node);
+                mat.insert_down(mat.pool[col_num].up, node);
                 if left_node != 0 { mat.insert_right(left_node, node); }
 
                 mat.col_size[col_num] += 1;
-                up_node[col_num] = node;
                 left_node = node;
             }
         }
@@ -90,14 +86,6 @@ impl Matrix {
         self.pool[at].right = node;
     }
 
-    // fn insert_left(&mut self, at: usize, node: usize) {
-    //     let left = self.pool[at].left;
-    //     self.pool[node].left = left;
-    //     self.pool[left].right = node;
-    //     self.pool[node].right = at;
-    //     self.pool[at].left = node;
-    // }
-
     fn insert_down(&mut self, at: usize, node: usize) {
         let down = self.pool[at].down;
         self.pool[node].down = down;
@@ -105,14 +93,6 @@ impl Matrix {
         self.pool[node].up = at;
         self.pool[at].down = node;
     }
-
-    // fn insert_up(&mut self, at: usize, node: usize) {
-    //     let up = self.pool[at].up;
-    //     self.pool[node].up = up;
-    //     self.pool[up].down = node;
-    //     self.pool[node].down = at;
-    //     self.pool[at].up = node;
-    // }
 
     fn cover_col(&mut self, col: usize) {
         let Node { left, right, .. } = self.pool[col];
@@ -157,11 +137,11 @@ impl Matrix {
     }
 
     fn recursive_search(&mut self, current_sol: &mut Vec<usize>, sols: &mut Vec<Vec<usize>>) {
-        if self.pool[self.head].right == self.head {
+        if self.pool[Matrix::HEAD].right == Matrix::HEAD {
             sols.push(current_sol.clone());
         }
 
-        let col = self.pool[self.head].right; // TODO: select better column
+        let col = self.pool[Matrix::HEAD].right; // TODO: select better column
         self.cover_col(col);
 
         let mut r = self.pool[col].down;
