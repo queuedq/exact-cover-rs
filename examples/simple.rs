@@ -5,13 +5,13 @@ fn main() {
     // First problem
     let mut mat = Matrix::with_rows(
         7,
-        vec![
-            vec![3, 5, 6],
-            vec![1, 4, 7],
-            vec![2, 3, 6],
-            vec![1, 4],
-            vec![2, 7],
-            vec![4, 5, 7],
+        &[
+            &[3, 5, 6],
+            &[1, 4, 7],
+            &[2, 3, 6],
+            &[1, 4],
+            &[2, 7],
+            &[4, 5, 7],
         ],
     );
     let solutions = mat.search();
@@ -20,7 +20,7 @@ fn main() {
     // Second problem
     mat = Matrix::with_rows(
         4,
-        vec![vec![1], vec![2], vec![3], vec![4], vec![1, 3], vec![2, 4]],
+        &[&[1], &[2], &[3], &[4], &[1, 3], &[2, 4]],
     );
     let solutions = mat.search();
     println!("Second problem: {:?}", solutions);

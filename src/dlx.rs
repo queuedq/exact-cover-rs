@@ -44,13 +44,13 @@ impl Matrix {
         mat
     }
 
-    pub fn with_rows(col_cnt: usize, rows: Vec<Vec<usize>>) -> Matrix {
+    pub fn with_rows(col_cnt: usize, rows: &[&[usize]]) -> Matrix {
         let mut mat = Matrix::new(col_cnt);
-        for row in &rows { mat.add_row(row) }
+        for row in rows { mat.add_row(row) }
         mat
     }
 
-    pub fn add_row(&mut self, row: &Vec<usize>) {
+    pub fn add_row(&mut self, row: &[usize]) {
         self.row_cnt += 1;
         let row_num = self.row_cnt;
         let mut left_node = 0;
@@ -190,13 +190,13 @@ mod tests {
     fn matrix_search_should_solve_exact_cover() {
         let mut mat = Matrix::with_rows(
             7,
-            vec![
-                vec![3, 5, 6],
-                vec![1, 4, 7],
-                vec![2, 3, 6],
-                vec![1, 4],
-                vec![2, 7],
-                vec![4, 5, 7],
+            &[
+                &[3, 5, 6],
+                &[1, 4, 7],
+                &[2, 3, 6],
+                &[1, 4],
+                &[2, 7],
+                &[4, 5, 7],
             ],
         );
         let solutions = mat.search();
@@ -207,7 +207,7 @@ mod tests {
     fn matrix_search_should_find_multiple_solutions() {
         let mut mat = Matrix::with_rows(
             4,
-            vec![vec![1], vec![2], vec![3], vec![4], vec![1, 3], vec![2, 4]],
+            &[&[1], &[2], &[3], &[4], &[1, 3], &[2, 4]],
         );
         let solutions = mat.search();
         assert_eq!(solutions.len(), 4);
