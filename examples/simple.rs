@@ -1,4 +1,3 @@
-extern crate exact_cover;
 use exact_cover::{Problem, Solver};
 
 fn main() {
