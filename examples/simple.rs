@@ -10,7 +10,9 @@ fn main() {
     prob.add_subset("D", &[1, 4]);
     prob.add_subset("E", &[2, 7]);
     prob.add_subset("F", &[4, 5, 7]);
+    println!("{:?}", prob);
     
     let mut solver = Solver::new(prob);
+    println!("{:?}", solver);
     println!("{:?}", solver.solve());
 }

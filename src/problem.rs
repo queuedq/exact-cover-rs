@@ -1,9 +1,8 @@
 use std::hash::Hash;
-use std::fmt::Debug;
 use std::collections::{HashMap, HashSet};
 
-pub trait Value: Copy + Hash + Eq + Debug {}
-impl<T: Copy + Hash + Eq + Debug> Value for T {}
+pub trait Value: Copy + Hash + Eq {}
+impl<T: Copy + Hash + Eq> Value for T {}
 
 #[derive(Debug, Default)]
 pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type

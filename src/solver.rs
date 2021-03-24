@@ -2,6 +2,7 @@ use indexmap::{IndexSet};
 use crate::dlx::{Matrix};
 use crate::problem::{Problem, Value};
 
+#[derive(Debug)]
 pub struct Solver<N: Value, C: Value> {
     problem: Problem<N, C>,
     matrix: Matrix,
