@@ -1,27 +1,16 @@
 extern crate exact_cover;
-use exact_cover::{Matrix};
+use exact_cover::{Problem, Solver};
 
 fn main() {
-    // First problem
-    let mut mat = Matrix::with_rows(
-        7,
-        &[
-            &[3, 5, 6],
-            &[1, 4, 7],
-            &[2, 3, 6],
-            &[1, 4],
-            &[2, 7],
-            &[4, 5, 7],
-        ],
-    );
-    let solutions = mat.search();
-    println!("First problem: {:?}", solutions);
-
-    // Second problem
-    mat = Matrix::with_rows(
-        4,
-        &[&[1], &[2], &[3], &[4], &[1, 3], &[2, 4]],
-    );
-    let solutions = mat.search();
-    println!("Second problem: {:?}", solutions);
+    let mut prob = Problem::default();
+    prob.add_constraints(&(1..=7).collect::<Vec<_>>());
+    prob.add_subset("A", &[3, 5, 6]);
+    prob.add_subset("B", &[1, 4, 7]);
+    prob.add_subset("C", &[2, 3, 6]);
+    prob.add_subset("D", &[1, 4]);
+    prob.add_subset("E", &[2, 7]);
+    prob.add_subset("F", &[4, 5, 7]);
+    
+    let mut solver = Solver::new(prob);
+    println!("{:?}", solver.solve());
 }

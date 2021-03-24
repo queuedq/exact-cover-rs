@@ -1,3 +1,6 @@
-pub mod dlx; // TODO: hide this module and use better api
+mod dlx;
+pub mod problem;
+pub mod solver;
 
-pub use dlx::Matrix;
+pub use problem::Problem;
+pub use solver::Solver;
