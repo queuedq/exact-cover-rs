@@ -18,7 +18,7 @@ impl<N: Value, C: Value> Solver<N, C> {
 
         let mut matrix = Matrix::new(problem.constraints().len());
         for name in &names {
-            let row: Vec<_> = problem.subsets()[&name].iter().map(|x| {
+            let row: Vec<_> = problem.subsets()[name].iter().map(|x| {
                 // TODO: raise error when constraint is not existent
                 constraints.get_index_of(x).unwrap() + 1
             }).collect();
@@ -30,7 +30,7 @@ impl<N: Value, C: Value> Solver<N, C> {
 
     pub fn solve(&mut self) -> Vec<Vec<N>> { // TODO: Use iterator
         self.matrix.search().iter().map(|ans| {
-            ans.iter().map(|&i| *self.names.get_index(i - 1).unwrap()).collect()
+            ans.iter().map(|i| *self.names.get_index(i - 1).unwrap()).collect()
         }).collect()
     }
 }
