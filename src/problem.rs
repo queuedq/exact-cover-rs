@@ -16,8 +16,8 @@ impl<N: Value, C: Value> Problem<N, C> {
         self.subsets.insert(name, elements.to_vec());
     }
 
-    pub fn add_constraints(&mut self, constraints: &[C]) {
-        for &constraint in constraints {
+    pub fn add_constraints<I: IntoIterator<Item = C>>(&mut self, constraints: I) {
+        for constraint in constraints {
             self.constraints.insert(constraint);
         }
     }

@@ -2,7 +2,7 @@ use exact_cover::{Problem, Solver};
 
 fn main() {
     let mut prob = Problem::default();
-    prob.add_constraints(&(1..=7).collect::<Vec<_>>());
+    prob.add_constraints(1..=7);
     prob.add_subset("A", &[3, 5, 6]);
     prob.add_subset("B", &[1, 4, 7]);
     prob.add_subset("C", &[2, 3, 6]);
