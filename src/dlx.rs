@@ -15,6 +15,12 @@ pub struct Matrix {
     col_cnt: usize,
     pool: Vec<Node>, // head: 0, columns: 1..col_size
     col_size: Vec<usize>,
+
+    partial_sol: Vec<usize>,
+    // TODO: for iterative implementation & persisting state
+    // col_stack: Vec<usize>,
+    // row_stack: Vec<usize>,
+    abort_requested: bool,
 }
 
 impl Default for Matrix {
@@ -24,10 +30,13 @@ impl Default for Matrix {
             col_cnt: 0,
             pool: vec![Node::default()],
             col_size: vec![0],
+            partial_sol: vec![],
+            abort_requested: false,
         }
     }
 }
 
+// Methods for initializing Matrix
 impl Matrix {
     const HEAD: usize = 0;
 
@@ -66,16 +75,56 @@ impl Matrix {
             left_node = node;
         }
     }
+}
 
-    pub fn search(&mut self) -> Vec<Vec<usize>> {
-        let mut current_sol = vec![];
-        let mut sols = vec![];
-        self.recursive_search(&mut current_sol, &mut sols);
-        sols
+// Main algorithm (dancing links)
+impl Matrix {
+    pub fn solve(
+        &mut self,
+        callback: impl Fn(&Matrix, Option<Vec<usize>>) -> bool,
+    ) {
+        self.abort_requested = false;
+        self.recursive_solve(&callback);
+        self.abort_requested = false;
+    }
+
+    // Recursive implementation cannot resume once aborted.
+    // TODO: write iterative implementation
+    fn recursive_solve(
+        &mut self,
+        callback: &impl Fn(&Matrix, Option<Vec<usize>>) -> bool,
+    ) {
+        let solution = match self.pool[Matrix::HEAD].right == Matrix::HEAD {
+            true => Some(self.partial_sol.clone()),
+            false => None,
+        };
+        if self.abort_requested || !callback(self, solution) {
+            self.abort_requested = true;
+            return
+        }
+
+        let col = self.pool[Matrix::HEAD].right; // TODO: select better column
+        self.cover_col(col);
+
+        let mut r = self.pool[col].down;
+        while r != col {
+            let row = self.select_row(r);
+            self.partial_sol.push(row);
+
+            // Recurse
+            self.recursive_solve(callback);
+
+            self.unselect_row(r);
+            self.partial_sol.pop();
+
+            r = self.pool[r].down;
+        }
+
+        self.uncover_col(col);
     }
 }
 
-// helper methods
+// Helper methods
 impl Matrix {
     fn create_node(&mut self, row: usize, col: usize) -> usize {
         let idx = self.pool.len();
@@ -148,36 +197,22 @@ impl Matrix {
         self.pool[right].left = col;
     }
 
-    fn recursive_search(&mut self, current_sol: &mut Vec<usize>, sols: &mut Vec<Vec<usize>>) {
-        if self.pool[Matrix::HEAD].right == Matrix::HEAD {
-            sols.push(current_sol.clone());
+    fn select_row(&mut self, r: usize) -> usize {
+        let mut j = self.pool[r].right;
+        while j != r {
+            self.cover_col(self.pool[j].col);
+            j = self.pool[j].right;
         }
+        // Returns index of selected row (containing node r)
+        self.pool[r].row
+    }
 
-        let col = self.pool[Matrix::HEAD].right; // TODO: select better column
-        self.cover_col(col);
-
-        let mut r = self.pool[col].down;
-        while r != col {
-            current_sol.push(self.pool[r].row);
-            let mut j = self.pool[r].right;
-            while j != r {
-                self.cover_col(self.pool[j].col);
-                j = self.pool[j].right;
-            }
-
-            self.recursive_search(current_sol, sols);
-
-            current_sol.pop();
-            j = self.pool[r].left;
-            while j != r {
-                self.uncover_col(self.pool[j].col);
-                j = self.pool[j].left;
-            }
-
-            r = self.pool[r].down;
+    fn unselect_row(&mut self, r: usize) {
+        let mut j = self.pool[r].left;
+        while j != r {
+            self.uncover_col(self.pool[j].col);
+            j = self.pool[j].left;
         }
-
-        self.uncover_col(col);
     }
 }
 
@@ -188,28 +223,5 @@ mod tests {
 
     #[test]
     fn matrix_search_should_solve_exact_cover() {
-        let mut mat = Matrix::with_rows(
-            7,
-            &[
-                &[3, 5, 6],
-                &[1, 4, 7],
-                &[2, 3, 6],
-                &[1, 4],
-                &[2, 7],
-                &[4, 5, 7],
-            ],
-        );
-        let solutions = mat.search();
-        assert_eq!(solutions.len(), 1);
-    }
-
-    #[test]
-    fn matrix_search_should_find_multiple_solutions() {
-        let mut mat = Matrix::with_rows(
-            4,
-            &[&[1], &[2], &[3], &[4], &[1, 3], &[2, 4]],
-        );
-        let solutions = mat.search();
-        assert_eq!(solutions.len(), 4);
     }
 }

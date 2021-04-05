@@ -1,13 +1,14 @@
 use std::hash::Hash;
-use std::collections::{HashMap, HashSet};
+use indexmap::{IndexMap, IndexSet};
 
-pub trait Value: Copy + Hash + Eq {}
-impl<T: Copy + Hash + Eq> Value for T {}
+pub trait Value: Clone + Hash + Eq {}
+impl<T: Clone + Hash + Eq> Value for T {}
 
 #[derive(Debug, Default)]
 pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type
-    constraints: HashSet<C>,
-    subsets: HashMap<N, Vec<C>>,
+    // TODO: wrap IndexMap/IndexSet
+    constraints: IndexSet<C>,
+    subsets: IndexMap<N, Vec<C>>,
 }
 
 impl<N: Value, C: Value> Problem<N, C> {
@@ -26,9 +27,9 @@ impl<N: Value, C: Value> Problem<N, C> {
         self.constraints.insert(constraint);
     }
 
-    pub fn subsets(&self) -> &HashMap<N, Vec<C>> { &self.subsets }
-    pub fn constraints(&self) -> &HashSet<C> { &self.constraints }
-    pub fn constraints_mut(&mut self) -> &mut HashSet<C> { &mut self.constraints }
+    pub fn subsets(&self) -> &IndexMap<N, Vec<C>> { &self.subsets }
+    pub fn constraints(&self) -> &IndexSet<C> { &self.constraints }
+    pub fn constraints_mut(&mut self) -> &mut IndexSet<C> { &mut self.constraints }
 }
 
 

@@ -1,17 +1,22 @@
-use exact_cover::{Problem, Solver};
+use exact_cover::{Problem, Solver, SolverEvent};
 
 fn main() {
     let mut prob = Problem::default();
-    prob.add_constraints(1..=7);
-    prob.add_subset("A", &[3, 5, 6]);
-    prob.add_subset("B", &[1, 4, 7]);
-    prob.add_subset("C", &[2, 3, 6]);
-    prob.add_subset("D", &[1, 4]);
-    prob.add_subset("E", &[2, 7]);
-    prob.add_subset("F", &[4, 5, 7]);
-    println!("{:?}", prob);
-    
-    let mut solver = Solver::new(prob);
-    println!("{:?}", solver);
-    println!("{:?}", solver.solve());
+    prob.add_constraints(1..=3);
+    prob.add_subset("A", &[1, 2, 3]);
+    prob.add_subset("B", &[1]);
+    prob.add_subset("C", &[2]);
+    prob.add_subset("D", &[3]);
+    prob.add_subset("E", &[1, 2]);
+    prob.add_subset("F", &[2, 3]);
+
+    let solver = Solver::new(prob);
+    solver.run().ok();
+
+    let sol: Vec<_> = solver.filter_map(|e| match e {
+        SolverEvent::SolutionFound(s) => Some(s),
+        _ => None,
+    }).collect();
+
+    println!("{:?}", sol);
 }

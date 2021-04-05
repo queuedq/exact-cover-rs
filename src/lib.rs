@@ -1,6 +1,6 @@
-mod dlx;
+pub mod dlx;
 pub mod problem;
 pub mod solver;
 
 pub use problem::Problem;
-pub use solver::Solver;
+pub use solver::{Solver, SolverEvent};
