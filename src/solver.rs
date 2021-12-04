@@ -2,7 +2,6 @@ use std::thread;
 use std::thread::{JoinHandle, Result as ThreadResult};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
-use indexmap::{IndexSet};
 use crate::dlx::{Matrix};
 use crate::problem::{Problem, Value};
 
@@ -33,21 +32,14 @@ enum SolverThreadEvent {
 
 pub struct Solver<N: Value, C: Value> {
     problem: Problem<N, C>,
-    names: IndexSet<N>,
-    solver_thread: SolverThread,
+    solver_thread: Option<SolverThread>,
 }
 
 impl<N: Value, C: Value> Solver<N, C> {
     pub fn new(problem: Problem<N, C>) -> Solver<N, C> {
-        let names: IndexSet<_> = problem.subsets().keys().cloned().collect();
-        let constraints: IndexSet<_> = problem.constraints().clone();
-        let mat = Solver::generate_matrix(&problem, &names, &constraints);
-        let solver_thread = SolverThread::new(mat);
-
         Solver {
             problem,
-            names,
-            solver_thread,
+            solver_thread: None,
         }
     }
 
@@ -56,41 +48,43 @@ impl<N: Value, C: Value> Solver<N, C> {
         todo!()
     }
 
-    fn generate_matrix(
-        problem: &Problem<N, C>, names: &IndexSet<N>, constraints: &IndexSet<C>
-    ) -> Matrix {
-        let mut mat = Matrix::new(constraints.len());
+    fn generate_matrix(problem: &Problem<N, C>) -> Matrix {
+        let names = problem.subsets().keys();
+
+        let mut mat = Matrix::new(problem.constraints().len());
         for name in names {
             let row: Vec<_> = problem.subsets()[name].iter().map(|x| {
                 // TODO: raise error when constraint is not existent
-                constraints.get_index_of(x).unwrap() + 1
+                problem.constraints().get_index_of(x).unwrap() + 1
             }).collect();
             mat.add_row(&row);
         }
         mat
     }
 
-    pub fn run(&self) -> Result<(), ()> {
-        self.solver_thread.send(SolverThreadSignal::Run)
-    }
-    
-    pub fn request_progress(&self) -> Result<(), ()> {
-        self.solver_thread.send(SolverThreadSignal::RequestProgress)
+    fn send_signal(&self, signal: SolverThreadSignal) -> Result<(), ()> {
+        let thread = self.solver_thread.as_ref().ok_or(())?;
+        thread.send(signal)
     }
 
-    pub fn pause(&self) -> Result<(), ()> {
-        self.solver_thread.send(SolverThreadSignal::Pause)
+    pub fn run(&mut self) -> Result<(), ()> {
+        if let Some(thread) = &self.solver_thread {
+            thread.send(SolverThreadSignal::Run)
+        } else {
+            let mat = Solver::generate_matrix(&self.problem);
+            self.solver_thread = Some(SolverThread::new(mat));
+            Ok(())
+        }
     }
-    
-    pub fn abort(&self) -> Result<(), ()> {
-        self.solver_thread.send(SolverThreadSignal::Abort)
-    }
+    pub fn request_progress(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::RequestProgress) }
+    pub fn pause(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::Pause) }
+    pub fn abort(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::Abort) }
 
     fn map_event(&self, event: SolverThreadEvent) -> SolverEvent<N> {
         match event {
             SolverThreadEvent::SolutionFound(sol) => SolverEvent::SolutionFound(
                 sol.iter()
-                    .map(|x| { self.names.get_index(x-1).unwrap().clone() })
+                    .map(|x| { self.problem.subsets().get_index(x-1).unwrap().0.clone() })
                     .collect()
             ),
             SolverThreadEvent::ProgressUpdated(progress) => SolverEvent::ProgressUpdated(progress),
@@ -105,14 +99,14 @@ impl<N: Value, C: Value> Iterator for Solver<N, C> {
     type Item = SolverEvent<N>;
 
     fn next(&mut self) -> Option<SolverEvent<N>> {
-        match self.solver_thread.recv() {
+        match self.solver_thread.as_ref()?.recv() {
             Ok(e) => Some(self.map_event(e)),
             Err(_) => None,
         }
     }
 }
 
-
+/// Represents a running thread.
 struct SolverThread {
     tx_signal: Sender<SolverThreadSignal>,
     rx_event: Receiver<SolverThreadEvent>,
@@ -205,7 +199,7 @@ mod tests {
         prob.add_subset("E", &[1, 2]);
         prob.add_subset("F", &[2, 3]);
 
-        let solver = Solver::new(prob);
+        let mut solver = Solver::new(prob);
         solver.run().ok();
 
         let sol: Vec<_> = solver.filter_map(|e| match e {

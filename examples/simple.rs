@@ -10,7 +10,7 @@ fn main() {
     prob.add_subset("E", &[1, 2]);
     prob.add_subset("F", &[2, 3]);
 
-    let solver = Solver::new(prob);
+    let mut solver = Solver::new(prob);
     solver.run().ok();
 
     let sol: Vec<_> = solver.filter_map(|e| match e {
