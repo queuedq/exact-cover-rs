@@ -1,3 +1,5 @@
+use crate::callback::Callback;
+
 #[derive(Debug, Default)]
 struct Node {
     // row, col: 1-based b/c of head node (only internally)
@@ -81,10 +83,10 @@ impl Matrix {
 impl Matrix {
     pub fn solve(
         &mut self,
-        callback: impl Fn(&Matrix, Option<Vec<usize>>) -> bool,
+        callback: &mut impl Callback,
     ) {
         self.abort_requested = false;
-        self.recursive_solve(&callback);
+        self.recursive_solve(callback);
         self.abort_requested = false;
     }
 
@@ -92,16 +94,14 @@ impl Matrix {
     // TODO: write iterative implementation
     fn recursive_solve(
         &mut self,
-        callback: &impl Fn(&Matrix, Option<Vec<usize>>) -> bool,
+        callback: &mut impl Callback,
     ) {
-        let solution = match self.pool[Matrix::HEAD].right == Matrix::HEAD {
-            true => Some(self.partial_sol.clone()),
-            false => None,
-        };
-        if self.abort_requested || !callback(self, solution) {
-            self.abort_requested = true;
-            return
+        if self.pool[Matrix::HEAD].right == Matrix::HEAD {
+            callback.on_solution(self.partial_sol.clone(), self);
         }
+
+        callback.on_iteration(self);
+        if self.abort_requested { return }
 
         let col = self.pool[Matrix::HEAD].right; // TODO: select better column
         self.cover_col(col);
@@ -126,6 +126,10 @@ impl Matrix {
 
 // Helper methods
 impl Matrix {
+    pub fn abort(&mut self) {
+        self.abort_requested = true;
+    }
+
     fn create_node(&mut self, row: usize, col: usize) -> usize {
         let idx = self.pool.len();
         self.pool.push(Node {

@@ -4,7 +4,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
 use crate::dlx::{Matrix};
 use crate::problem::{Problem, Value};
-
+use crate::callback::Callback;
 
 #[derive(Debug)]
 pub enum SolverEvent<N: Value> {
@@ -106,6 +106,7 @@ impl<N: Value, C: Value> Iterator for Solver<N, C> {
     }
 }
 
+
 /// Represents a running thread.
 struct SolverThread {
     tx_signal: Sender<SolverThreadSignal>,
@@ -114,50 +115,14 @@ struct SolverThread {
 }
 
 impl SolverThread {
-    pub fn new(mut mat: Matrix) -> SolverThread {
+    fn new(mut mat: Matrix) -> SolverThread {
         let (tx_signal, rx_signal) = mpsc::channel();
         let (tx_event, rx_event) = mpsc::channel();
 
-        // TODO: use proper return type instead of bool (in dlx)
-        let callback = move |_mat: &Matrix, sol: Option<Vec<usize>>| -> bool {
-            // Send events
-            if let Some(s) = sol {
-                tx_event.send(SolverThreadEvent::SolutionFound(s)).ok();
-            }
-
-            let update_progress = || {
-                // TODO: implement progress update (in dlx)
-                tx_event.send(SolverThreadEvent::ProgressUpdated(0.0)).ok();
-                todo!()
-            };
-
-            let pause = || -> SolverThreadSignal {
-                tx_event.send(SolverThreadEvent::Paused).ok();
-                loop {
-                    match rx_signal.recv() {
-                        Ok(SolverThreadSignal::Run) => break SolverThreadSignal::Run,
-                        Ok(SolverThreadSignal::Abort) => break SolverThreadSignal::Abort,
-                        _ => (),
-                    }
-                }
-            };
-
-            // Handle pending signals
-            loop {
-                match rx_signal.try_recv() {
-                    Ok(SolverThreadSignal::Run) => (),
-                    Ok(SolverThreadSignal::RequestProgress) => update_progress(),
-                    Ok(SolverThreadSignal::Pause) => {
-                        if let SolverThreadSignal::Abort = pause() { break false }
-                    },
-                    Ok(SolverThreadSignal::Abort) => break false,
-                    Err(_) => break true,
-                }
-            }
-        };
+        let mut callback = ThreadCallback::new(rx_signal, tx_event);
 
         // TODO: what happens when it gets RequestProgress after thread is finished?
-        let thread = thread::spawn(move || { mat.solve(callback); });
+        let thread = thread::spawn(move || { mat.solve(&mut callback); });
         
         SolverThread {
             tx_signal,
@@ -166,20 +131,84 @@ impl SolverThread {
         }
     }
 
-    pub fn send(&self, signal: SolverThreadSignal) -> Result<(), ()> {
+    fn send(&self, signal: SolverThreadSignal) -> Result<(), ()> {
         self.tx_signal.send(signal).map_err(|_| {()})
     }
 
-    pub fn try_recv(&self) -> Result<SolverThreadEvent, TryRecvError> {
+    fn try_recv(&self) -> Result<SolverThreadEvent, TryRecvError> {
         self.rx_event.try_recv()
     }
 
-    pub fn recv(&self) -> Result<SolverThreadEvent, RecvError> {
+    fn recv(&self) -> Result<SolverThreadEvent, RecvError> {
         self.rx_event.recv()
     }
 
-    pub fn join(self) -> ThreadResult<()> {
+    fn join(self) -> ThreadResult<()> {
         self.thread.join()
+    }
+}
+
+struct ThreadCallback {
+    signal: Receiver<SolverThreadSignal>,
+    event: Sender<SolverThreadEvent>,
+}
+
+impl ThreadCallback {
+    fn new(
+        signal: Receiver<SolverThreadSignal>,
+        event: Sender<SolverThreadEvent>,
+    ) -> ThreadCallback {
+
+        ThreadCallback { signal, event }
+    }
+
+    fn update_progress(&self) {
+        // TODO: implement progress update (in dlx)
+        self.event.send(SolverThreadEvent::ProgressUpdated(0.0)).ok();
+        todo!()
+    }
+
+    // Returns a signal received while paused.
+    fn pause(&self) -> SolverThreadSignal {
+        self.event.send(SolverThreadEvent::Paused).ok();
+        loop {
+            match self.signal.recv() {
+                Ok(SolverThreadSignal::Run) => break SolverThreadSignal::Run,
+                Ok(SolverThreadSignal::RequestProgress) => (),
+                Ok(SolverThreadSignal::Pause) => (),
+                Ok(SolverThreadSignal::Abort) => break SolverThreadSignal::Abort,
+                Err(RecvError) => break SolverThreadSignal::Abort,
+            }
+        }
+    }
+}
+
+impl Callback for ThreadCallback {
+    fn on_solution(&mut self, sol: Vec<usize>, mat: &mut Matrix) {
+        self.event.send(SolverThreadEvent::SolutionFound(sol)).ok();
+    }
+    
+    fn on_iteration(&mut self, mat: &mut Matrix) {
+        let mut pause_signal = None; // signal received while paused
+
+        let abort = loop {
+            let signal = match pause_signal {
+                Some(s) => Ok(s),
+                None => self.signal.try_recv(),
+            };
+            pause_signal = None;
+
+            match signal {
+                Ok(SolverThreadSignal::Run) => (),
+                Ok(SolverThreadSignal::RequestProgress) => self.update_progress(),
+                Ok(SolverThreadSignal::Pause) => pause_signal = Some(self.pause()),
+                Ok(SolverThreadSignal::Abort) => break true,
+                Err(TryRecvError::Disconnected) => break true,
+                Err(TryRecvError::Empty) => break false,
+            }
+        };
+
+        if abort { mat.abort(); }
     }
 }
 
