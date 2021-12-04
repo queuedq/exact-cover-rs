@@ -13,6 +13,7 @@ pub enum SolverEvent<N: Value> {
     Paused,
     // TODO: see with_saved_problem
     Aborted(Matrix), // Solver can resume from here later
+    Finished,
 }
 
 enum SolverThreadSignal {
@@ -115,13 +116,12 @@ struct SolverThread {
 }
 
 impl SolverThread {
+    // TODO: terminate thread on drop 
     fn new(mut mat: Matrix) -> SolverThread {
         let (tx_signal, rx_signal) = mpsc::channel();
         let (tx_event, rx_event) = mpsc::channel();
-
+        
         let mut callback = ThreadCallback::new(rx_signal, tx_event);
-
-        // TODO: what happens when it gets RequestProgress after thread is finished?
         let thread = thread::spawn(move || { mat.solve(&mut callback); });
         
         SolverThread {
@@ -132,10 +132,13 @@ impl SolverThread {
     }
 
     fn send(&self, signal: SolverThreadSignal) -> Result<(), ()> {
+        // TODO: Handle signals after the thread is terminated
+        // e.g. what happens when it gets RequestProgress after thread is finished?
         self.tx_signal.send(signal).map_err(|_| {()})
     }
 
     fn recv(&self) -> Result<SolverThreadEvent, RecvError> {
+        // TODO: Emit "Finished" event when the DLX algorithm has terminated successfully
         self.rx_event.recv()
     }
 }
