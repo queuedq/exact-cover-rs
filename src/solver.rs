@@ -1,5 +1,5 @@
 use std::thread;
-use std::thread::{JoinHandle, Result as ThreadResult};
+use std::thread::{JoinHandle};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
 use crate::dlx::{Matrix};
@@ -111,7 +111,7 @@ impl<N: Value, C: Value> Iterator for Solver<N, C> {
 struct SolverThread {
     tx_signal: Sender<SolverThreadSignal>,
     rx_event: Receiver<SolverThreadEvent>,
-    thread: JoinHandle<()>,
+    _thread: JoinHandle<()>, // TODO: do I need it?
 }
 
 impl SolverThread {
@@ -127,7 +127,7 @@ impl SolverThread {
         SolverThread {
             tx_signal,
             rx_event,
-            thread,
+            _thread: thread,
         }
     }
 
@@ -135,16 +135,8 @@ impl SolverThread {
         self.tx_signal.send(signal).map_err(|_| {()})
     }
 
-    fn try_recv(&self) -> Result<SolverThreadEvent, TryRecvError> {
-        self.rx_event.try_recv()
-    }
-
     fn recv(&self) -> Result<SolverThreadEvent, RecvError> {
         self.rx_event.recv()
-    }
-
-    fn join(self) -> ThreadResult<()> {
-        self.thread.join()
     }
 }
 
@@ -158,7 +150,6 @@ impl ThreadCallback {
         signal: Receiver<SolverThreadSignal>,
         event: Sender<SolverThreadEvent>,
     ) -> ThreadCallback {
-
         ThreadCallback { signal, event }
     }
 
@@ -184,7 +175,7 @@ impl ThreadCallback {
 }
 
 impl Callback for ThreadCallback {
-    fn on_solution(&mut self, sol: Vec<usize>, mat: &mut Matrix) {
+    fn on_solution(&mut self, sol: Vec<usize>, _mat: &mut Matrix) {
         self.event.send(SolverThreadEvent::SolutionFound(sol)).ok();
     }
     
@@ -209,6 +200,11 @@ impl Callback for ThreadCallback {
         };
 
         if abort { mat.abort(); }
+    }
+
+    fn on_abort(&mut self, _mat: &mut Matrix) {
+        // TODO: write matrix serialization code
+        // self.event.send(SolverThreadEvent::Aborted(mat.serialize()));
     }
 }
 

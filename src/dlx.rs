@@ -87,7 +87,6 @@ impl Matrix {
     ) {
         self.abort_requested = false;
         self.recursive_solve(callback);
-        self.abort_requested = false;
     }
 
     // Recursive implementation cannot resume once aborted.
@@ -96,13 +95,19 @@ impl Matrix {
         &mut self,
         callback: &mut impl Callback,
     ) {
+        // Handle callbacks
         if self.pool[Matrix::HEAD].right == Matrix::HEAD {
             callback.on_solution(self.partial_sol.clone(), self);
         }
 
         callback.on_iteration(self);
-        if self.abort_requested { return }
 
+        if self.abort_requested {
+            callback.on_abort(self);
+            return
+        }
+
+        // DLX algorithm starts here
         let col = self.pool[Matrix::HEAD].right; // TODO: select better column
         self.cover_col(col);
 
