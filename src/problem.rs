@@ -12,9 +12,9 @@ pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more comple
 }
 
 impl<N: Value, C: Value> Problem<N, C> {
-    pub fn add_subset(&mut self, name: N, elements: &[C]) {
+    pub fn add_subset(&mut self, name: N, elements: Vec<C>) {
         if self.subsets.contains_key(&name) { return } // TODO: Raise error
-        self.subsets.insert(name, elements.to_vec());
+        self.subsets.insert(name, elements);
     }
 
     pub fn add_constraints<I: IntoIterator<Item = C>>(&mut self, constraints: I) {
@@ -40,11 +40,11 @@ mod tests {
     #[test]
     fn problem_can_be_created() {
         let mut prob = Problem::default();
-        prob.add_subset("A", &[3, 5, 6]);
-        prob.add_subset("B", &[1, 4, 7]);
-        prob.add_subset("C", &[2, 3, 6]);
-        prob.add_subset("D", &[1, 4]);
-        prob.add_subset("E", &[2, 7]);
-        prob.add_subset("F", &[4, 5, 7]);
+        prob.add_subset("A", vec![3, 5, 6]);
+        prob.add_subset("B", vec![1, 4, 7]);
+        prob.add_subset("C", vec![2, 3, 6]);
+        prob.add_subset("D", vec![1, 4]);
+        prob.add_subset("E", vec![2, 7]);
+        prob.add_subset("F", vec![4, 5, 7]);
     }
 }
