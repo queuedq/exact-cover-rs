@@ -1,6 +1,7 @@
 use crate::callback::Callback;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
+#[cfg_attr(test, derive(Debug))]
 struct Node {
     // row, col: 1-based b/c of head node (only internally)
     row: usize,
@@ -11,7 +12,7 @@ struct Node {
     down: usize,
 }
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(Debug))]
 pub struct Matrix {
     row_cnt: usize,
     col_cnt: usize,

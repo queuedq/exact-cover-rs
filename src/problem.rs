@@ -4,7 +4,7 @@ use indexmap::{IndexMap, IndexSet};
 pub trait Value: Clone + Hash + Eq {}
 impl<T: Clone + Hash + Eq> Value for T {}
 
-#[derive(Debug)]
+#[cfg_attr(test, derive(Debug))]
 pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type
     // TODO: wrap IndexMap/IndexSet
     constraints: IndexSet<C>,
@@ -49,6 +49,7 @@ mod tests {
     #[test]
     fn problem_can_be_created() {
         let mut prob = Problem::default();
+        prob.add_constraints(1..=7);
         prob.add_subset("A", vec![3, 5, 6]);
         prob.add_subset("B", vec![1, 4, 7]);
         prob.add_subset("C", vec![2, 3, 6]);
