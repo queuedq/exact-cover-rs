@@ -4,11 +4,20 @@ use indexmap::{IndexMap, IndexSet};
 pub trait Value: Clone + Hash + Eq {}
 impl<T: Clone + Hash + Eq> Value for T {}
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type
     // TODO: wrap IndexMap/IndexSet
     constraints: IndexSet<C>,
     subsets: IndexMap<N, Vec<C>>,
+}
+
+impl<N: Value, C: Value> Default for Problem<N, C> {
+    fn default() -> Self {
+        Problem {
+            constraints: Default::default(),
+            subsets: Default::default(),
+        }
+    }
 }
 
 impl<N: Value, C: Value> Problem<N, C> {
