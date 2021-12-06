@@ -6,7 +6,6 @@ use crate::dlx::{Matrix};
 use crate::problem::{Problem, Value};
 use crate::callback::Callback;
 
-#[derive(Debug)]
 pub enum SolverEvent<N: Value> {
     SolutionFound(Vec<N>),
     ProgressUpdated(f32),
