@@ -229,7 +229,7 @@ impl Matrix {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
     #[test]
     fn matrix_search_should_solve_exact_cover() {

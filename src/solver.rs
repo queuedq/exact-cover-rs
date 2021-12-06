@@ -26,7 +26,7 @@ enum SolverThreadEvent {
     SolutionFound(Vec<usize>),
     ProgressUpdated(f32),
     Paused,
-    Aborted(Matrix),
+    _Aborted(Matrix),
 }
 
 
@@ -89,7 +89,7 @@ impl<N: Value, C: Value> Solver<N, C> {
             ),
             SolverThreadEvent::ProgressUpdated(progress) => SolverEvent::ProgressUpdated(progress),
             SolverThreadEvent::Paused => SolverEvent::Paused,
-            SolverThreadEvent::Aborted(mat) => SolverEvent::Aborted(mat),
+            SolverThreadEvent::_Aborted(mat) => SolverEvent::Aborted(mat),
         }
     }
 }
