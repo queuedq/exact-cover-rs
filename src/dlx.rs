@@ -108,8 +108,23 @@ impl Matrix {
             return
         }
 
-        // DLX algorithm starts here
-        let col = self.pool[Matrix::HEAD].right; // TODO: select better column
+        // DLX algorithm
+        // =============
+
+        // MRV (minimum remaining values) heuristic
+        // Choose a column with minimal branching factor
+        let mut col = self.pool[Matrix::HEAD].right;
+        let mut j = col;
+        let mut s = self.col_size[col];
+        while j != Matrix::HEAD {
+            if self.col_size[j] < s {
+                col = j;
+                s = self.col_size[j];
+            }
+            j = self.pool[j].right;
+        }
+        
+        // Select a row to cover the selected column
         self.cover_col(col);
 
         let mut r = self.pool[col].down;
