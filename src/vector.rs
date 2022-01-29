@@ -3,7 +3,7 @@ use std::ops;
 const COS: [i32; 4] = [1, 0, -1, 0];
 const SIN: [i32; 4] = [0, 1, 0, -1];
 
-/// 2D vector to represent coordinates or translation vectors.
+/// A 2D vector to represent a coordinate, translation, etc.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Default)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Vector2D { pub x: i32, pub y: i32 }
@@ -24,6 +24,7 @@ impl ops::Sub<Vector2D> for Vector2D {
 
 impl Vector2D {
     /// Rotates the vector by (rotation * 90) degrees.
+    /// (counter-clockwise in the standard coordinate system where the y-axis is upwards.)
     pub fn rotate(&self, rotation: i32) -> Vector2D {
         let t = ((rotation % 4 + 4) % 4) as usize;
         Vector2D { 

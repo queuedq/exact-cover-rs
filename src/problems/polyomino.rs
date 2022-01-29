@@ -2,7 +2,7 @@ use indexmap::{IndexMap, IndexSet};
 use crate::problem::{Problem, Value};
 use crate::vector::Vector2D;
 
-/// Orientation of a piece.
+/// An orientation of a piece.
 /// 
 /// Reflection is applied first, then rotation.
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Default)]
@@ -13,9 +13,10 @@ pub struct Orientation {
 }
 
 
-// Polyomino
-
-/// The coordinates are normalized, i.e., the minimums of x or y coordinates are 0.
+/// A polyomino piece, possibly with disconnected cells.
+/// 
+/// The coordinates are normalized upon creation,
+/// so it does not contain translation information.
 #[derive(PartialEq, Eq, Hash, Default)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Polyomino {
@@ -24,11 +25,17 @@ pub struct Polyomino {
     // TODO: add flags to configure the piece (e.g. rotation, reflection, etc.)
 }
 
-pub struct InvalidPiece;
+/// An error returned when an invalid piece is given.
+pub struct InvalidPieceError;
 
 impl Polyomino {
-    pub fn new(cells: &[Vector2D]) -> Result<Polyomino, InvalidPiece> {
-        if cells.len() == 0 { return Err(InvalidPiece) }
+    /// Creates a new `Polyomino` from a list of cell positions.
+    /// 
+    /// The coordinates are normalized upon creation,
+    /// i.e., the minimums of x/y coordinates are set to 0.
+    /// It returns an error if the given list is empty.
+    pub fn new(cells: &[Vector2D]) -> Result<Polyomino, InvalidPieceError> {
+        if cells.len() == 0 { return Err(InvalidPieceError) }
 
         let min_x = cells.iter().map(|c| { c.x }).min().unwrap();
         let max_x = cells.iter().map(|c| { c.x }).max().unwrap();
@@ -48,6 +55,11 @@ impl Polyomino {
             }
         })
     }
+
+    /// Returns the list of cells in the piece.
+    pub fn cells(&self) -> &Vec<Vector2D> { &self.cells }
+    /// Returns the size of the bounding box.
+    pub fn size(&self) -> Vector2D { self.size }
     
     /// Orients the piece according to the given orientation.
     /// Reflection is applied first, then rotation.
@@ -94,14 +106,12 @@ impl Polyomino {
         res
     }
 
+    /// Returns the list of cells after translation.
     pub fn translated_cells(&self, trans: Vector2D) -> Vec<Vector2D> {
         self.cells.iter()
             .map(|&c| { c + trans })
             .collect()
     }
-
-    pub fn cells(&self) -> &Vec<Vector2D> { &self.cells }
-    pub fn size(&self) -> Vector2D { self.size }
 }
 
 
