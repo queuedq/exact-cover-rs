@@ -56,6 +56,30 @@ impl Polyomino {
         })
     }
 
+    /// Convenience function to create a new `Polyomino` from a bytes array.
+    /// 
+    /// `#` represents a cell in the piece.
+    /// Any other byte represents an empty cell. (usually `.`)
+    /// 
+    /// When `inverted_y` is true, it uses the inverted y-axis coordinate system 
+    /// (y-axis pointing downwards) commonly used in computing.
+    pub fn from_bytes_array(array: &[&[u8]], inverted_y: bool) -> Result<Polyomino, InvalidPieceError> {
+        let mut cells = Vec::new();
+
+        for y in 0..array.len() {
+            for x in 0..array[y].len() {
+                if array[y][x] == b'#' {
+                    cells.push(Vector2D {
+                        x: x as i32,
+                        y: if inverted_y { y as i32 } else { -(y as i32) }
+                    });
+                }
+            }
+        }
+
+        Polyomino::new(&cells)
+    }
+
     /// Returns the list of cells in the piece.
     pub fn cells(&self) -> &Vec<Vector2D> { &self.cells }
     /// Returns the size of the bounding box.
