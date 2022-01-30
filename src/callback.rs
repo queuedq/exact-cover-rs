@@ -6,6 +6,7 @@ pub trait Callback {
     fn on_abort(&mut self, _mat: &mut Matrix) {}
 }
 
+#[derive(Default)]
 pub struct SolutionCallback {
     pub solutions: Vec<Vec<usize>>,
 }
