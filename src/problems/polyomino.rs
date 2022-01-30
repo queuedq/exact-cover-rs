@@ -107,7 +107,7 @@ impl Polyomino {
             .map(|&Vector2D { x, y }| { Vector2D { x: -x, y } })
             .collect();
 
-        Polyomino::new(&reflected).ok().unwrap()
+        Polyomino::new(&reflected).unwrap()
     }
 
     /// Rotates the piece as specified amount.
@@ -116,7 +116,7 @@ impl Polyomino {
             .map(|c| { c.rotate(rotation) })
             .collect();
 
-        Polyomino::new(&rotated).ok().unwrap()
+        Polyomino::new(&rotated).unwrap()
     }
 
     /// Returns possible orientations of the piece without duplication.
