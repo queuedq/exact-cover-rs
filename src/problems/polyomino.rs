@@ -2,6 +2,9 @@ use indexmap::{IndexMap, IndexSet};
 use crate::problem::{Problem, Value};
 use crate::vector::Vector2D;
 
+// Orientation
+// ===========
+
 /// An orientation of a piece.
 /// 
 /// Reflection is applied first, then rotation.
@@ -12,6 +15,9 @@ pub struct Orientation {
     pub rotation: i32, // 0..4
 }
 
+
+// Polyomino
+// =========
 
 /// A polyomino piece, possibly with disconnected cells.
 /// 
@@ -26,6 +32,7 @@ pub struct Polyomino {
 }
 
 /// An error returned when an invalid piece is given.
+#[derive(Debug)]
 pub struct InvalidPieceError;
 
 impl Polyomino {
@@ -140,7 +147,9 @@ impl Polyomino {
 
 
 // Board
+// ========
 
+/// A board to fit the pieces in.
 #[derive(Default)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Board {
@@ -149,6 +158,9 @@ pub struct Board {
 }
 
 impl Board {
+    /// Creates a new board from a 2D boolean list.
+    /// 
+    /// `true` corresponds to an empty cell where the pieces can fit in.
     pub fn new(cells: Vec<Vec<bool>>) -> Board {
         // TODO: validate parameter
         assert_eq!(cells.len() > 0, true);
@@ -162,6 +174,15 @@ impl Board {
         }
     }
 
+    /// Returns a 2D boolean list representing this board.
+    /// 
+    /// `true` corresponds to an empty cell where the pieces can fit in.
+    pub fn cells(&self) -> &Vec<Vec<bool>> { &self.cells }
+    /// Returns the size of the board.
+    pub fn size(&self) -> Vector2D { self.size }
+
+    /// Returns whether the given piece can fit in the board
+    /// with specified orientation and translation.
     pub fn piece_fits(
         &self,
         piece: &Polyomino,
@@ -179,16 +200,17 @@ impl Board {
     fn out_of_bounds(&self, Vector2D { x, y }: Vector2D) -> bool {
         x < 0 || x >= self.size.x || y < 0 || y >= self.size.y
     }
-
-    pub fn cells(&self) -> &Vec<Vec<bool>> { &self.cells }
-    pub fn size(&self) -> Vector2D { self.size }
 }
 
 
 // Problem
+// =========
 
+/// An identifier of a piece placed in a specified orientation and translation.
+/// It is used as a subset name of [`Problem`] instance.
 pub type CompoundName<N> = (N, Orientation, Vector2D);
 
+/// An exact cover constraint for polyomino packing problem.
 #[derive(PartialEq, Eq, Clone, Hash)]
 #[cfg_attr(test, derive(Debug))]
 pub enum CompoundConstraint<N> {
@@ -196,6 +218,8 @@ pub enum CompoundConstraint<N> {
     Cell(Vector2D),
 }
 
+/// A polyomino packing problem.
+#[derive(Default)]
 #[cfg_attr(test, derive(Debug))]
 pub struct PolyominoPacking<N: Value> {
     board: Board,
@@ -203,21 +227,25 @@ pub struct PolyominoPacking<N: Value> {
 }
 
 impl<N: Value> PolyominoPacking<N> {
-    pub fn new() -> PolyominoPacking<N> {
-        PolyominoPacking {
-            board: Default::default(),
-            pieces: Default:: default(),
-        }
-    }
+    // TODO: hide IndexMap/IndexSet from API
+    /// Returns a reference to the board.
+    pub fn board(&self) -> &Board { &self.board }
+    /// Returns a mutable reference to the board.
+    pub fn board_mut(&mut self) -> &mut Board { &mut self.board }
+    /// Returns a reference to the pieces.
+    pub fn pieces(&self) -> &IndexMap<N, Polyomino> { &self.pieces }
+    /// Returns a mutable reference to the pieces.
+    pub fn pieces_mut(&mut self) -> &mut IndexMap<N, Polyomino> { &mut self.pieces }
 
-    pub fn set_board(&mut self, board: Board) {
-        self.board = board;
-    }
-    
+    /// Adds a piece to the problem.
+    /// 
+    /// If the piece name already exists,
+    /// it updates the piece of that name with the given new piece.
     pub fn add_piece(&mut self, name: N, piece: Polyomino) {
         self.pieces.insert(name, piece);
     }
 
+    /// Generates an exact cover problem instance ([`Problem`]).
     pub fn generate_problem(&self) -> Problem<CompoundName<N>, CompoundConstraint<N>> {
         let mut prob = Problem::<CompoundName<N>, CompoundConstraint<N>>::default();
 
@@ -235,6 +263,7 @@ impl<N: Value> PolyominoPacking<N> {
             }
         }
 
+        // Subsets
         for (name, piece) in &self.pieces {
             for o in piece.unique_orientations() {
                 let p = piece.orient(o);
@@ -255,7 +284,7 @@ impl<N: Value> PolyominoPacking<N> {
         prob
     }
 
-    pub fn generate_subset(
+    fn generate_subset(
         name: N,
         oriented_piece: &Polyomino,
         trans: Vector2D,
@@ -268,9 +297,6 @@ impl<N: Value> PolyominoPacking<N> {
         );
         subset
     }
-
-    pub fn board(&self) -> &Board { &self.board }
-    pub fn pieces(&self) -> &IndexMap<N, Polyomino> { &self.pieces }
 }
 
 
@@ -279,20 +305,6 @@ mod tests {
     use std::collections::HashSet;
     use super::*;
     use crate::{Solver, SolverEvent};
-
-    fn parse_piece(string: &[&str]) -> Polyomino {
-        let mut cells = Vec::new();
-
-        for y in 0..string.len() {
-            for x in 0..string[y].len() {
-                if string[y].chars().nth(x).unwrap() == '#' {
-                    cells.push(Vector2D { x: x as i32, y: y as i32 });
-                }
-            }
-        }
-
-        Polyomino::new(&cells).ok().unwrap()
-    }
 
     fn compare_unique_orientations(piece: &Polyomino, expected: &[(bool, i32)]) {
         assert_eq!(
@@ -304,24 +316,24 @@ mod tests {
     }
 
     #[test]
-    fn unique_orientations_can_be_found_1() {
-        let tetro_l = parse_piece(&[".#.", ".#.", ".##"]);
+    fn unique_orientations_can_be_found() {
+        let tetro_l = Polyomino::from_bytes_array(&[b".#.", b".#.", b".##"], true).unwrap();
         compare_unique_orientations(&tetro_l, &[
             (false, 0), (false, 1), (false, 2), (false, 3),
             (true, 0), (true, 1), (true, 2), (true, 3),
         ]);
 
-        let tetro_s = parse_piece(&["...", ".##", "##."]);
+        let tetro_s = Polyomino::from_bytes_array(&[b"...", b".##", b"##."], true).unwrap();
         compare_unique_orientations(&tetro_s, &[
             (false, 0), (false, 1), (true, 0), (true, 1),
         ]);
 
-        let tetro_o = parse_piece(&["...", ".##", ".##"]);
+        let tetro_o = Polyomino::from_bytes_array(&[b"...", b".##", b".##"], true).unwrap();
         compare_unique_orientations(&tetro_o, &[
             (false, 0),
         ]);
 
-        let pento_w = parse_piece(&["..#", ".##", "##."]);
+        let pento_w = Polyomino::from_bytes_array(&[b"..#", b".##", b"##."], true).unwrap();
         compare_unique_orientations(&pento_w, &[
             (false, 0), (false, 1), (false, 2), (false, 3),
         ]);
@@ -338,17 +350,17 @@ mod tests {
         }).collect();
         let board = Board::new(board_cells);
 
-        let p1 = parse_piece(&[
-            "###",
-            "#.#",
-        ]);
-        let p2 = parse_piece(&[
-            "###",
-            ".#.",
-        ]);
+        let p1 = Polyomino::from_bytes_array(&[
+            b"###",
+            b"#.#",
+        ], true).unwrap();
+        let p2 = Polyomino::from_bytes_array(&[
+            b"###",
+            b".#.",
+        ], true).unwrap();
         
-        let mut prob = PolyominoPacking::new();
-        prob.set_board(board);
+        let mut prob = PolyominoPacking::default();
+        *prob.board_mut() = board;
         prob.add_piece("1", p1);
         prob.add_piece("2", p2);
         let gen_prob = prob.generate_problem();

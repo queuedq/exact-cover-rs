@@ -73,8 +73,8 @@ fn main() {
         b"##.",
     ]);
     
-    let mut prob = PolyominoPacking::new();
-    prob.set_board(board);
+    let mut prob = PolyominoPacking::default();
+    *prob.board_mut() = board;
     prob.add_piece("I", tet_i);
     prob.add_piece("O", tet_o);
     prob.add_piece("T", tet_t);

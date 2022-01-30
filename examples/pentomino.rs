@@ -111,8 +111,8 @@ fn main() {
         b".##",
     ]);
     
-    let mut prob = PolyominoPacking::new();
-    prob.set_board(board);
+    let mut prob = PolyominoPacking::default();
+    *prob.board_mut() = board;
     prob.add_piece("F", pento_f);
     prob.add_piece("I", pento_i);
     prob.add_piece("L", pento_l);
