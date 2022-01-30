@@ -1,12 +1,26 @@
 use std::hash::Hash;
 use indexmap::{IndexMap, IndexSet};
 
+/// Base trait for subset names and constraints.
 pub trait Value: Clone + Hash + Eq {}
 impl<T: Clone + Hash + Eq> Value for T {}
 
+/// An exact cover problem instance.
+/// 
+/// The subsets are identified with a name with a type `N`.
+/// The elements of the set are called constraints and have a type `C`.
+/// 
+/// # Order
+/// 
+/// The order of subsets and constraints is determined by the insertion order.
+/// It uses [`IndexMap`] and [`IndexSet`] internally to keep track of the order.
+/// 
+/// The subset order can affect the order of the solutions and
+/// the algorithm performance, but it would not be a significant effect
+/// as our algorithm uses the MRV heuristic.
+#[derive(Clone)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type
-    // TODO: wrap IndexMap/IndexSet
     constraints: IndexSet<C>,
     subsets: IndexMap<N, Vec<C>>,
 }
@@ -20,25 +34,37 @@ impl<N: Value, C: Value> Default for Problem<N, C> {
     }
 }
 
-impl<N: Value, C: Value> Problem<N, C> {
-    pub fn add_subset(&mut self, name: N, elements: Vec<C>) {
-        if self.subsets.contains_key(&name) { return } // TODO: Raise error
-        self.subsets.insert(name, elements);
-    }
+/// An error returned when a subset name parameter
+/// given to [`Problem::add_subset`] is already existing.
+#[derive(Debug)]
+pub struct SubsetExistingError;
 
+impl<N: Value, C: Value> Problem<N, C> {
+    // TODO: hide IndexMap/IndexSet from API
+    /// Returns a reference to the subsets of the problem.
+    pub fn subsets(&self) -> &IndexMap<N, Vec<C>> { &self.subsets }
+    /// Returns a reference to the constraints of the problem.
+    pub fn constraints(&self) -> &IndexSet<C> { &self.constraints }
+
+    /// Adds a subset to the problem.
+    /// 
+    /// If the subset name already exists,
+    /// it updates the subset of that name with the given new subset.
+    pub fn add_subset(&mut self, name: N, subset: Vec<C>) {
+        self.subsets.insert(name, subset);
+    }
+    
+    /// Adds a constraint (set element) to the problem.
+    pub fn add_constraint(&mut self, constraint: C) {
+        self.constraints.insert(constraint);
+    }
+    
+    /// Adds several constraints to the problem.
     pub fn add_constraints<I: IntoIterator<Item = C>>(&mut self, constraints: I) {
         for constraint in constraints {
             self.constraints.insert(constraint);
         }
     }
-
-    pub fn add_constraint(&mut self, constraint: C) {
-        self.constraints.insert(constraint);
-    }
-
-    pub fn subsets(&self) -> &IndexMap<N, Vec<C>> { &self.subsets }
-    pub fn constraints(&self) -> &IndexSet<C> { &self.constraints }
-    pub fn constraints_mut(&mut self) -> &mut IndexSet<C> { &mut self.constraints }
 }
 
 
