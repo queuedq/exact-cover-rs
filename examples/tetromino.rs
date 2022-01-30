@@ -1,20 +1,7 @@
+use std::time::Instant;
 use exact_cover::vector::Vector2D;
 use exact_cover::problems::polyomino::{Polyomino, PolyominoPacking, Board, CompoundName};
 use exact_cover::{Solver, SolverEvent};
-
-fn parse_piece(string: &[&[u8]]) -> Polyomino {
-    let mut cells = Vec::new();
-
-    for y in 0..string.len() {
-        for x in 0..string[y].len() {
-            if string[y][x] == b'#' {
-                cells.push(Vector2D { x: x as i32, y: y as i32 });
-            }
-        }
-    }
-
-    Polyomino::new(&cells).ok().unwrap()
-}
 
 fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
     let mut buff = Vec::new();
@@ -42,36 +29,33 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
 }
 
 fn main() {
-    let board_cells: Vec<Vec<bool>> = ([
+    let board = Board::from_bytes_array(&[
         b"##...",
         b"#....",
         b"#....",
         b"#....",
         b".....",
-    ]).iter().map(|s| {
-        s.iter().map(|c| { *c == b'.' }).collect()
-    }).collect();
-    let board = Board::new(board_cells);
+    ]);
 
-    let tet_i = parse_piece(&[
+    let tet_i = Polyomino::from_bytes_array(&[
         b"####",
-    ]);
-    let tet_o = parse_piece(&[
+    ]).unwrap();
+    let tet_o = Polyomino::from_bytes_array(&[
         b"##",
         b"##",
-    ]);
-    let tet_t = parse_piece(&[
+    ]).unwrap();
+    let tet_t = Polyomino::from_bytes_array(&[
         b"###",
         b".#.",
-    ]);
-    let tet_l = parse_piece(&[
+    ]).unwrap();
+    let tet_l = Polyomino::from_bytes_array(&[
         b"#..",
         b"###",
-    ]);
-    let tet_s = parse_piece(&[
+    ]).unwrap();
+    let tet_s = Polyomino::from_bytes_array(&[
         b".##",
         b"##.",
-    ]);
+    ]).unwrap();
     
     let mut prob = PolyominoPacking::default();
     *prob.board_mut() = board;
@@ -80,19 +64,30 @@ fn main() {
     prob.add_piece("T", tet_t);
     prob.add_piece("L", tet_l);
     prob.add_piece("S", tet_s);
+    
+    println!("Generating the problem...");
     let gen_prob = prob.generate_problem();
-
     let mut solver = Solver::new(gen_prob);
+    
+    println!("Solving the problem...");
+    let start_time = Instant::now();
     solver.run().ok();
 
     let sol: Vec<_> = solver.filter_map(|e| match e {
         SolverEvent::SolutionFound(s) => Some(s),
         _ => None,
     }).collect();
+    let elapsed_time = start_time.elapsed();
 
-    println!("{:?}", sol.len());
-    for solution in sol {
+    println!("Done!");
+    for solution in &sol {
         println!();
         print_sol(&prob, &solution);
     }
+
+    println!(
+        "Found {:?} solutions, w/ rotations/reflections. ({:?}s)",
+        sol.len(),
+        elapsed_time.as_millis() as f64 / 1000.
+    );
 }

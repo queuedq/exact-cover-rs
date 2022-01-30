@@ -65,21 +65,17 @@ impl Polyomino {
 
     /// Convenience function to create a new `Polyomino` from a bytes array.
     /// 
+    /// It uses the inverted y-axis coordinate system.
     /// `#` represents a cell in the piece.
+    /// If `array[y][x]` is `#`, then the cell `(x, y)` is a corresponding cell in the piece.
     /// Any other byte represents an empty cell. (usually `.`)
-    /// 
-    /// When `inverted_y` is true, it uses the inverted y-axis coordinate system 
-    /// (y-axis pointing downwards) commonly used in computing.
-    pub fn from_bytes_array(array: &[&[u8]], inverted_y: bool) -> Result<Polyomino, InvalidPieceError> {
+    pub fn from_bytes_array(array: &[&[u8]]) -> Result<Polyomino, InvalidPieceError> {
         let mut cells = Vec::new();
 
         for y in 0..array.len() {
             for x in 0..array[y].len() {
                 if array[y][x] == b'#' {
-                    cells.push(Vector2D {
-                        x: x as i32,
-                        y: if inverted_y { y as i32 } else { -(y as i32) }
-                    });
+                    cells.push(Vector2D { x: x as i32, y: y as i32 });
                 }
             }
         }
@@ -160,7 +156,9 @@ pub struct Board {
 impl Board {
     /// Creates a new board from a 2D boolean list.
     /// 
-    /// `true` corresponds to an empty cell where the pieces can fit in.
+    /// It uses the inverted y-axis coordinate system.
+    /// `true` corresponds to an empty cell where pieces can fit in.
+    /// If `cells[y][x]` is true, then the cell `(x, y)` is a corresponding empty cell in the board.
     pub fn new(cells: Vec<Vec<bool>>) -> Board {
         // TODO: validate parameter
         assert_eq!(cells.len() > 0, true);
@@ -174,9 +172,25 @@ impl Board {
         }
     }
 
+    /// Convenience function to create a new `Board` from a bytes array.
+    /// 
+    /// It uses the inverted y-axis coordinate system.
+    /// `.` represents an empty cell to fit pieces in.
+    /// If `array[y][x]` is `.`, then the cell `(x, y)` is a corresponding empty cell in the board.
+    /// Any other byte represents an unused cell. (usually `#`)
+    pub fn from_bytes_array(array: &[&[u8]]) -> Board {
+        let cells: Vec<Vec<bool>> = array.iter().map(|&s| {
+            s.iter().map(|&c| { c == b'.' }).collect()
+        }).collect();
+
+        Board::new(cells)
+    }
+
     /// Returns a 2D boolean list representing this board.
     /// 
-    /// `true` corresponds to an empty cell where the pieces can fit in.
+    /// It uses the inverted y-axis coordinate system.
+    /// `true` corresponds to an empty cell where pieces can fit in.
+    /// If `cells[y][x]` is true, then the cell `(x, y)` is a corresponding empty cell in the board.
     pub fn cells(&self) -> &Vec<Vec<bool>> { &self.cells }
     /// Returns the size of the board.
     pub fn size(&self) -> Vector2D { self.size }
@@ -317,23 +331,23 @@ mod tests {
 
     #[test]
     fn unique_orientations_can_be_found() {
-        let tetro_l = Polyomino::from_bytes_array(&[b".#.", b".#.", b".##"], true).unwrap();
+        let tetro_l = Polyomino::from_bytes_array(&[b".#.", b".#.", b".##"]).unwrap();
         compare_unique_orientations(&tetro_l, &[
             (false, 0), (false, 1), (false, 2), (false, 3),
             (true, 0), (true, 1), (true, 2), (true, 3),
         ]);
 
-        let tetro_s = Polyomino::from_bytes_array(&[b"...", b".##", b"##."], true).unwrap();
+        let tetro_s = Polyomino::from_bytes_array(&[b"...", b".##", b"##."]).unwrap();
         compare_unique_orientations(&tetro_s, &[
             (false, 0), (false, 1), (true, 0), (true, 1),
         ]);
 
-        let tetro_o = Polyomino::from_bytes_array(&[b"...", b".##", b".##"], true).unwrap();
+        let tetro_o = Polyomino::from_bytes_array(&[b"...", b".##", b".##"]).unwrap();
         compare_unique_orientations(&tetro_o, &[
             (false, 0),
         ]);
 
-        let pento_w = Polyomino::from_bytes_array(&[b"..#", b".##", b"##."], true).unwrap();
+        let pento_w = Polyomino::from_bytes_array(&[b"..#", b".##", b"##."]).unwrap();
         compare_unique_orientations(&pento_w, &[
             (false, 0), (false, 1), (false, 2), (false, 3),
         ]);
@@ -341,23 +355,20 @@ mod tests {
 
     #[test]
     fn problem_can_be_solved() {
-        let board_cells: Vec<Vec<bool>> = ([
-            "...",
-            "...",
-            "...",
-        ]).iter().map(|s| {
-            s.chars().map(|c| { c == '.' }).collect()
-        }).collect();
-        let board = Board::new(board_cells);
+        let board = Board::from_bytes_array(&[
+            b"...",
+            b"...",
+            b"...",
+        ]);
 
         let p1 = Polyomino::from_bytes_array(&[
             b"###",
             b"#.#",
-        ], true).unwrap();
+        ]).unwrap();
         let p2 = Polyomino::from_bytes_array(&[
             b"###",
             b".#.",
-        ], true).unwrap();
+        ]).unwrap();
         
         let mut prob = PolyominoPacking::default();
         *prob.board_mut() = board;

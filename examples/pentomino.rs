@@ -3,20 +3,6 @@ use exact_cover::vector::Vector2D;
 use exact_cover::problems::polyomino::{Polyomino, PolyominoPacking, Board, CompoundName};
 use exact_cover::{Solver, SolverEvent};
 
-fn parse_piece(string: &[&[u8]]) -> Polyomino {
-    let mut cells = Vec::new();
-
-    for y in 0..string.len() {
-        for x in 0..string[y].len() {
-            if string[y][x] == b'#' {
-                cells.push(Vector2D { x: x as i32, y: y as i32 });
-            }
-        }
-    }
-
-    Polyomino::new(&cells).ok().unwrap()
-}
-
 fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
     let mut buff = Vec::new();
     
@@ -43,7 +29,7 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
 }
 
 fn main() {
-    let board_cells: Vec<Vec<bool>> = ([
+    let board = Board::from_bytes_array(&[
         b"........",
         b"........",
         b"........",
@@ -52,64 +38,61 @@ fn main() {
         b"........",
         b"........",
         b"........",
-    ]).iter().map(|s| {
-        s.iter().map(|c| { *c == b'.' }).collect()
-    }).collect();
-    let board = Board::new(board_cells);
+    ]);
 
-    let pento_f = parse_piece(&[
+    let pento_f = Polyomino::from_bytes_array(&[
         b".##",
         b"##.",
         b".#.",
-    ]);
-    let pento_i = parse_piece(&[
+    ]).unwrap();
+    let pento_i = Polyomino::from_bytes_array(&[
         b"#####",
-    ]);
-    let pento_l = parse_piece(&[
+    ]).unwrap();
+    let pento_l = Polyomino::from_bytes_array(&[
         b"####",
         b"#...",
-    ]);
-    let pento_n = parse_piece(&[
+    ]).unwrap();
+    let pento_n = Polyomino::from_bytes_array(&[
         b".###",
         b"##..",
-    ]);
-    let pento_p = parse_piece(&[
+    ]).unwrap();
+    let pento_p = Polyomino::from_bytes_array(&[
         b"###",
         b".##",
-    ]);
-    let pento_t = parse_piece(&[
+    ]).unwrap();
+    let pento_t = Polyomino::from_bytes_array(&[
         b"###",
         b".#.",
         b".#.",
-    ]);
-    let pento_u = parse_piece(&[
+    ]).unwrap();
+    let pento_u = Polyomino::from_bytes_array(&[
         b"#.#",
         b"###",
-    ]);
-    let pento_v = parse_piece(&[
+    ]).unwrap();
+    let pento_v = Polyomino::from_bytes_array(&[
         b"#..",
         b"#..",
         b"###",
-    ]);
-    let pento_w = parse_piece(&[
+    ]).unwrap();
+    let pento_w = Polyomino::from_bytes_array(&[
         b"#..",
         b"##.",
         b".##",
-    ]);
-    let pento_x = parse_piece(&[
+    ]).unwrap();
+    let pento_x = Polyomino::from_bytes_array(&[
         b".#.",
         b"###",
         b".#.",
-    ]);
-    let pento_y = parse_piece(&[
+    ]).unwrap();
+    let pento_y = Polyomino::from_bytes_array(&[
         b"####",
         b".#..",
-    ]);
-    let pento_z = parse_piece(&[
+    ]).unwrap();
+    let pento_z = Polyomino::from_bytes_array(&[
         b"##.",
         b".#.",
         b".##",
-    ]);
+    ]).unwrap();
     
     let mut prob = PolyominoPacking::default();
     *prob.board_mut() = board;
