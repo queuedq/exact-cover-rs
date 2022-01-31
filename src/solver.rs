@@ -48,7 +48,7 @@ impl<N: Value, C: Value> Solver<N, C> {
         todo!()
     }
 
-    fn generate_matrix(problem: &Problem<N, C>) -> Matrix {
+    pub fn generate_matrix(problem: &Problem<N, C>) -> Matrix {
         let names = problem.subsets().keys();
 
         let mut mat = Matrix::new(problem.constraints().len());
