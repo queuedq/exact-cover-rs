@@ -16,7 +16,7 @@ struct Node {
 pub struct Matrix {
     row_cnt: usize,
     col_cnt: usize,
-    pool: Vec<Node>, // head: 0, columns: 1..col_size
+    pool: Vec<Node>, // head: 0, columns: 1..=col_cnt
     col_size: Vec<usize>,
 
     partial_sol: Vec<usize>,
