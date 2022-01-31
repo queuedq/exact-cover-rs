@@ -20,9 +20,9 @@ pub struct Matrix {
     col_size: Vec<usize>,
 
     partial_sol: Vec<usize>,
-    // TODO: for iterative implementation & persisting state
-    // col_stack: Vec<usize>,
-    // row_stack: Vec<usize>,
+    col_stack: Vec<usize>,
+    row_stack: Vec<usize>,
+    task_stack: Vec<usize>,
     abort_requested: bool,
 }
 
@@ -33,7 +33,11 @@ impl Default for Matrix {
             col_cnt: 0,
             pool: vec![Node::default()],
             col_size: vec![0],
+            
             partial_sol: vec![],
+            col_stack: vec![],
+            row_stack: vec![],
+            task_stack: vec![],
             abort_requested: false,
         }
     }
@@ -87,15 +91,15 @@ impl Matrix {
         callback: &mut impl Callback,
     ) {
         self.abort_requested = false;
-        self.recursive_solve(callback);
+        self.iterative_solve(callback);
     }
 
     // Recursive implementation cannot resume once aborted.
-    // TODO: write iterative implementation
-    fn recursive_solve(
+    fn _recursive_solve(
         &mut self,
         callback: &mut impl Callback,
     ) {
+        // === Task 1 ===
         // Handle callbacks
         if self.pool[Matrix::HEAD].right == Matrix::HEAD {
             callback.on_solution(self.partial_sol.clone(), self);
@@ -104,6 +108,7 @@ impl Matrix {
         callback.on_iteration(self);
 
         if self.abort_requested {
+            // TODO: call on_abort only once and return in all recursion levels
             callback.on_abort(self);
             return
         }
@@ -113,28 +118,22 @@ impl Matrix {
 
         // MRV (minimum remaining values) heuristic
         // Choose a column with minimal branching factor
-        let mut col = self.pool[Matrix::HEAD].right;
-        let mut j = col;
-        let mut s = self.col_size[col];
-        while j != Matrix::HEAD {
-            if self.col_size[j] < s {
-                col = j;
-                s = self.col_size[j];
-            }
-            j = self.pool[j].right;
-        }
+        let (col, size) = self.choose_best_col();
+        if size == 0 { return; } // Dead end
         
         // Select a row to cover the selected column
         self.cover_col(col);
 
         let mut r = self.pool[col].down;
         while r != col {
+            // === Task 2 ===
             let row = self.select_row(r);
             self.partial_sol.push(row);
 
             // Recurse
-            self.recursive_solve(callback);
+            self._recursive_solve(callback);
 
+            // === Task 3 === (including out of while loop)
             self.unselect_row(r);
             self.partial_sol.pop();
 
@@ -142,6 +141,73 @@ impl Matrix {
         }
 
         self.uncover_col(col);
+    }
+
+    fn iterative_solve(&mut self, callback: &mut impl Callback) {
+        self.task_stack.push(1);
+
+        while !self.task_stack.is_empty() {
+            match self.task_stack.pop().unwrap() {
+                1 => {
+                    // Handle callbacks
+                    if self.pool[Matrix::HEAD].right == Matrix::HEAD {
+                        callback.on_solution(self.partial_sol.clone(), self);
+                    }
+
+                    callback.on_iteration(self);
+
+                    if self.abort_requested {
+                        callback.on_abort(self);
+                        return
+                    }
+
+                    // MRV (minimum remaining values) heuristic
+                    // Choose a column with minimal branching factor
+                    let (col, size) = self.choose_best_col();
+                    if size == 0 { continue; } // Dead end
+
+                    // Select a row to cover the selected column
+                    self.cover_col(col);
+
+                    let r = self.pool[col].down;
+                    // End of chunk
+                    self.col_stack.push(col);
+                    self.row_stack.push(r);
+                    self.task_stack.push(2);
+                }
+                2 => {
+                    // Restore variables
+                    let r = *self.row_stack.last().unwrap();
+                    
+                    let row = self.select_row(r);
+                    self.partial_sol.push(row);
+                    
+                    // End of chunk
+                    self.task_stack.push(3);
+                    self.task_stack.push(1);
+                }
+                3 => {
+                    // Restore variables
+                    let col = *self.col_stack.last().unwrap();
+                    let mut r = self.row_stack.pop().unwrap();
+                    
+                    self.unselect_row(r);
+                    self.partial_sol.pop();
+                    
+                    r = self.pool[r].down;
+                    // End of chunk
+                    if r == col {
+                        // Out of while loop
+                        self.uncover_col(col);
+                        self.col_stack.pop();
+                    } else {
+                        self.row_stack.push(r);
+                        self.task_stack.push(2);
+                    }
+                }
+                _ => { panic!("Unexpected implementation error"); }
+            }
+        }
     }
 }
 
@@ -242,6 +308,22 @@ impl Matrix {
             self.uncover_col(self.pool[j].col);
             j = self.pool[j].left;
         }
+    }
+
+    #[inline]
+    fn choose_best_col(&self) -> (usize, usize) {
+        let mut col = self.pool[Matrix::HEAD].right;
+        let mut size = self.col_size[col];
+        
+        let mut j = col;
+        while j != Matrix::HEAD {
+            if self.col_size[j] < size {
+                col = j;
+                size = self.col_size[j];
+            }
+            j = self.pool[j].right;
+        }
+        (col, size)
     }
 }
 
