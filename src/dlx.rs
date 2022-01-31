@@ -180,6 +180,7 @@ impl Matrix {
         self.pool[at].down = node;
     }
 
+    #[inline]
     fn cover_col(&mut self, col: usize) {
         let Node { left, right, .. } = self.pool[col];
         self.pool[left].right = right;
@@ -201,6 +202,7 @@ impl Matrix {
         }
     }
 
+    #[inline]
     fn uncover_col(&mut self, col: usize) {
         let mut i = self.pool[col].up;
         while i != col {
@@ -222,6 +224,7 @@ impl Matrix {
         self.pool[right].left = col;
     }
 
+    #[inline]
     fn select_row(&mut self, r: usize) -> usize {
         let mut j = self.pool[r].right;
         while j != r {
@@ -232,6 +235,7 @@ impl Matrix {
         self.pool[r].row
     }
 
+    #[inline]
     fn unselect_row(&mut self, r: usize) {
         let mut j = self.pool[r].left;
         while j != r {
