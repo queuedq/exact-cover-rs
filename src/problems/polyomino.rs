@@ -176,7 +176,6 @@ impl Board {
     /// 
     /// It uses the inverted y-axis coordinate system.
     /// `.` represents an empty cell to fit pieces in.
-    /// If `array[y][x]` is `.`, then the cell `(x, y)` is a corresponding empty cell in the board.
     /// Any other byte represents an unused cell. (usually `#`)
     pub fn from_bytes_array(array: &[&[u8]]) -> Board {
         let cells: Vec<Vec<bool>> = array.iter().map(|&s| {
