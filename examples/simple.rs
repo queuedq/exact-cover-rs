@@ -11,7 +11,7 @@ fn main() {
     prob.add_subset("F", vec![2, 3]);
 
     let mut solver = Solver::new(prob);
-    solver.run().ok();
+    solver.run();
 
     let sol: Vec<_> = solver.filter_map(|e| match e {
         SolverEvent::SolutionFound(s) => Some(s),

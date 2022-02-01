@@ -388,7 +388,7 @@ mod tests {
         let gen_prob = prob.generate_problem();
         
         let mut solver = Solver::new(gen_prob);
-        solver.run().unwrap();
+        solver.run();
 
         let sol: Vec<_> = solver.filter_map(|e| match e {
             SolverEvent::SolutionFound(s) => Some(s),

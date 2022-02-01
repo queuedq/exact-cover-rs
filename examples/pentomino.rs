@@ -116,7 +116,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     println!("Solving the problem...");
     let start_time = Instant::now();
-    solver.run().unwrap();
+    solver.run();
 
     let sol: Vec<_> = solver.filter_map(|e| match e {
         SolverEvent::SolutionFound(s) => Some(s),

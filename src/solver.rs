@@ -6,11 +6,11 @@ use crate::dlx::{Matrix};
 use crate::problem::{Problem, Value};
 use crate::callback::Callback;
 
+/// An event that a solver emits.
 pub enum SolverEvent<N: Value> {
     SolutionFound(Vec<N>),
     ProgressUpdated(f32),
     Paused,
-    // TODO: see with_saved_problem
     Aborted(Matrix), // Solver can resume from here later
     Finished,
 }
@@ -44,11 +44,6 @@ impl<N: Value, C: Value> Solver<N, C> {
         }
     }
 
-    pub fn with_saved_problem(_problem: Problem<N, C>) -> Solver<N, C> {
-        // `problem` will be of type PartiallySolvedProbem
-        todo!()
-    }
-
     pub fn generate_matrix(problem: &Problem<N, C>) -> Matrix {
         let names = problem.subsets().keys();
 
@@ -68,18 +63,18 @@ impl<N: Value, C: Value> Solver<N, C> {
         thread.send(signal)
     }
 
-    pub fn run(&mut self) -> Result<(), ()> {
+    pub fn run(&mut self) {
+        // TODO: where should I handle thread SendError?
         if let Some(thread) = &self.solver_thread {
-            thread.send(SolverThreadSignal::Run)
+            thread.send(SolverThreadSignal::Run).ok();
         } else {
             let mat = Solver::generate_matrix(&self.problem);
             self.solver_thread = Some(SolverThread::new(mat));
-            Ok(())
         }
     }
-    pub fn request_progress(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::RequestProgress) }
-    pub fn pause(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::Pause) }
-    pub fn abort(&self) -> Result<(), ()> { self.send_signal(SolverThreadSignal::Abort) }
+    pub fn request_progress(&self) { self.send_signal(SolverThreadSignal::RequestProgress).ok(); }
+    pub fn pause(&self) { self.send_signal(SolverThreadSignal::Pause).ok(); }
+    pub fn abort(&self) { self.send_signal(SolverThreadSignal::Abort).ok(); }
 
     fn map_event(&self, event: SolverThreadEvent) -> SolverEvent<N> {
         match event {
@@ -233,7 +228,7 @@ mod tests {
         prob.add_subset("F", vec![2, 3]);
 
         let mut solver = Solver::new(prob);
-        solver.run().ok();
+        solver.run();
 
         let sol: Vec<_> = solver.filter_map(|e| match e {
             SolverEvent::SolutionFound(s) => Some(s),
