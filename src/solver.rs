@@ -27,6 +27,7 @@ enum SolverThreadEvent {
     ProgressUpdated(f32),
     Paused,
     _Aborted(Matrix),
+    Finished,
 }
 
 
@@ -90,6 +91,7 @@ impl<N: Value, C: Value> Solver<N, C> {
             SolverThreadEvent::ProgressUpdated(progress) => SolverEvent::ProgressUpdated(progress),
             SolverThreadEvent::Paused => SolverEvent::Paused,
             SolverThreadEvent::_Aborted(mat) => SolverEvent::Aborted(mat),
+            SolverThreadEvent::Finished => SolverEvent::Finished,
         }
     }
 }
@@ -207,6 +209,10 @@ impl Callback for ThreadCallback {
     fn on_abort(&mut self, _mat: &mut Matrix) {
         // TODO: write matrix serialization code
         // self.event.send(SolverThreadEvent::Aborted(mat.serialize()));
+    }
+
+    fn on_finish(&mut self) {
+        self.event.send(SolverThreadEvent::Finished).ok();
     }
 }
 

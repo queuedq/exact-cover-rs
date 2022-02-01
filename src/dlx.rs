@@ -94,7 +94,10 @@ impl Matrix {
         self.iterative_solve(callback);
     }
 
-    // Recursive implementation cannot resume once aborted.
+    /// A recursive DLX algorithm.
+    /// 
+    /// It functions as a reference implementation for [`iterative_solve`].
+    /// It does not handle all callback functions, so be careful when you want to use it.
     fn _recursive_solve(
         &mut self,
         callback: &mut impl Callback,
@@ -106,12 +109,6 @@ impl Matrix {
         }
 
         callback.on_iteration(self);
-
-        if self.abort_requested {
-            // TODO: call on_abort only once and return in all recursion levels
-            callback.on_abort(self);
-            return
-        }
 
         // DLX algorithm
         // =============
@@ -208,6 +205,8 @@ impl Matrix {
                 _ => { panic!("Unexpected implementation error"); }
             }
         }
+
+        callback.on_finish()
     }
 }
 
