@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::fmt::Display;
 use indexmap::{IndexMap, IndexSet};
 use crate::problem::{Problem, Value};
 use crate::vector::Vector2D;
@@ -32,8 +34,18 @@ pub struct Polyomino {
 }
 
 /// An error returned when an invalid piece is given.
+/// 
+/// Currently, it only occurs when the given piece is blank.
 #[derive(Debug)]
 pub struct InvalidPieceError;
+
+impl Display for InvalidPieceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid (blank) piece.")
+    }
+}
+
+impl Error for InvalidPieceError {}
 
 impl Polyomino {
     /// Creates a new `Polyomino` from a list of cell positions.
@@ -353,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn problem_can_be_solved() {
+    fn problem_can_be_solved() -> Result<(), Box<dyn Error>> {
         let board = Board::from_bytes_array(&[
             b"...",
             b"...",
@@ -363,11 +375,11 @@ mod tests {
         let p1 = Polyomino::from_bytes_array(&[
             b"###",
             b"#.#",
-        ]).unwrap();
+        ])?;
         let p2 = Polyomino::from_bytes_array(&[
             b"###",
             b".#.",
-        ]).unwrap();
+        ])?;
         
         let mut prob = PolyominoPacking::default();
         *prob.board_mut() = board;
@@ -376,7 +388,7 @@ mod tests {
         let gen_prob = prob.generate_problem();
         
         let mut solver = Solver::new(gen_prob);
-        solver.run().ok();
+        solver.run().unwrap();
 
         let sol: Vec<_> = solver.filter_map(|e| match e {
             SolverEvent::SolutionFound(s) => Some(s),
@@ -384,5 +396,7 @@ mod tests {
         }).collect();
 
         assert_eq!(sol.len(), 4);
+
+        Ok(())
     }
 }

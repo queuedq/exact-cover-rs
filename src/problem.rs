@@ -34,11 +34,6 @@ impl<N: Value, C: Value> Default for Problem<N, C> {
     }
 }
 
-/// An error returned when a subset name parameter
-/// given to [`Problem::add_subset`] is already existing.
-#[derive(Debug)]
-pub struct SubsetExistingError;
-
 impl<N: Value, C: Value> Problem<N, C> {
     // TODO: hide IndexMap/IndexSet from API
     /// Returns a reference to the subsets of the problem.

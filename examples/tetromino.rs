@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::time::Instant;
 use exact_cover::vector::Vector2D;
 use exact_cover::problems::polyomino::{Polyomino, PolyominoPacking, Board, CompoundName};
@@ -28,7 +29,7 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
     }
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let board = Board::from_bytes_array(&[
         b"##...",
         b"#....",
@@ -39,23 +40,23 @@ fn main() {
 
     let tet_i = Polyomino::from_bytes_array(&[
         b"####",
-    ]).unwrap();
+    ])?;
     let tet_o = Polyomino::from_bytes_array(&[
         b"##",
         b"##",
-    ]).unwrap();
+    ])?;
     let tet_t = Polyomino::from_bytes_array(&[
         b"###",
         b".#.",
-    ]).unwrap();
+    ])?;
     let tet_l = Polyomino::from_bytes_array(&[
         b"#..",
         b"###",
-    ]).unwrap();
+    ])?;
     let tet_s = Polyomino::from_bytes_array(&[
         b".##",
         b"##.",
-    ]).unwrap();
+    ])?;
     
     let mut prob = PolyominoPacking::default();
     *prob.board_mut() = board;
@@ -71,7 +72,7 @@ fn main() {
     
     println!("Solving the problem...");
     let start_time = Instant::now();
-    solver.run().ok();
+    solver.run().unwrap();
 
     let sol: Vec<_> = solver.filter_map(|e| match e {
         SolverEvent::SolutionFound(s) => Some(s),
@@ -90,4 +91,6 @@ fn main() {
         sol.len(),
         elapsed_time.as_millis() as f64 / 1000.
     );
+
+    Ok(())
 }
