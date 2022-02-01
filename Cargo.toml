@@ -3,6 +3,10 @@ name = "exact-cover"
 version = "0.1.0"
 authors = ["queuedq <queuedq@gmail.com>"]
 edition = "2021"
+license = "MIT"
+description = "(WIP) Asynchronous exact cover solver library using Knuth's dancing links algorithm"
+repository = "https://github.com/queuedq/exact-cover-rs"
+keywords = ["exact-cover", "dancing-links", "dlx", "polyomino"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
