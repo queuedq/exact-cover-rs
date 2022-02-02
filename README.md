@@ -2,6 +2,7 @@ Asynchronous [exact cover](https://en.wikipedia.org/wiki/Exact_cover) solver lib
 Knuth's [dancing links (DLX)](https://en.wikipedia.org/wiki/Dancing_Links) algorithm.
 
 ⚠️ This library is working in progress and the API is highly likely to be changed.
+Please use other libraries such as [dlx](https://crates.io/crates/dlx) or [dancing-links](https://crates.io/crates/dancing-links) for the time being.
 
 ## Concept
 
