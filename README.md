@@ -1,5 +1,5 @@
 Asynchronous [exact cover](https://en.wikipedia.org/wiki/Exact_cover) solver library using
-Knuth's [dancing links](https://en.wikipedia.org/wiki/Dancing_Links) algorithm.
+Knuth's [dancing links (DLX)](https://en.wikipedia.org/wiki/Dancing_Links) algorithm.
 
 ⚠️ This library is working in progress and the API is highly likely to be changed.
 

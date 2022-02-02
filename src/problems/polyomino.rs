@@ -1,3 +1,5 @@
+//! A polyomino packing problem.
+
 use std::error::Error;
 use std::fmt::Display;
 use indexmap::{IndexMap, IndexSet};

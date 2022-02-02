@@ -1,5 +1,9 @@
-use crate::callback::Callback;
+//! A low-level API for dancing links (DLX) algorithm.
+//! 
+//! If you are looking for a [`Problem`](crate::problem::Problem) solver API,
+//! see the [`solver`](crate::solver) module.
 
+/// A single node of [`Matrix`].
 #[derive(Default)]
 #[cfg_attr(test, derive(Debug))]
 struct Node {
@@ -12,6 +16,7 @@ struct Node {
     down: usize,
 }
 
+/// A sparse matrix representation of an exact cover problem used for DLX algorithm.
 #[cfg_attr(test, derive(Debug))]
 pub struct Matrix {
     row_cnt: usize,
@@ -24,6 +29,14 @@ pub struct Matrix {
     row_stack: Vec<usize>,
     task_stack: Vec<usize>,
     abort_requested: bool,
+}
+
+/// An interface of callback objects to pass to the DLX algorithm.
+pub trait Callback {
+    fn on_solution(&mut self, _sol: Vec<usize>, _mat: &mut Matrix) {}
+    fn on_iteration(&mut self, _mat: &mut Matrix) {}
+    fn on_abort(&mut self, _mat: &mut Matrix) {}
+    fn on_finish(&mut self) {}
 }
 
 impl Default for Matrix {
@@ -140,6 +153,7 @@ impl Matrix {
         self.uncover_col(col);
     }
 
+    /// An iterative DLX algorithm.
     fn iterative_solve(&mut self, callback: &mut impl Callback) {
         self.task_stack.push(1);
 

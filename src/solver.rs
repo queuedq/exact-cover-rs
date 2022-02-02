@@ -1,12 +1,13 @@
+//! Provides a solver that solves a generic [`Problem`].
+
 use std::thread;
 use std::thread::{JoinHandle};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
-use crate::dlx::{Matrix};
+use crate::dlx::{Matrix, Callback};
 use crate::problem::{Problem, Value};
-use crate::callback::Callback;
 
-/// An event that a solver emits.
+/// Events that a solver emits.
 pub enum SolverEvent<N: Value> {
     SolutionFound(Vec<N>),
     ProgressUpdated(f32),
@@ -30,13 +31,14 @@ enum SolverThreadEvent {
     Finished,
 }
 
-
+/// A solver for a [`Problem`] instance.
 pub struct Solver<N: Value, C: Value> {
     problem: Problem<N, C>,
     solver_thread: Option<SolverThread>,
 }
 
 impl<N: Value, C: Value> Solver<N, C> {
+    /// Creates a new solver that solves `problem`.
     pub fn new(problem: Problem<N, C>) -> Solver<N, C> {
         Solver {
             problem,
@@ -63,6 +65,7 @@ impl<N: Value, C: Value> Solver<N, C> {
         thread.send(signal)
     }
 
+    /// Runs the solver thread.
     pub fn run(&mut self) {
         // TODO: where should I handle thread SendError?
         if let Some(thread) = &self.solver_thread {

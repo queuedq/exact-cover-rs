@@ -1,11 +1,6 @@
-use crate::dlx::{Matrix};
+//! Basic low-level callback objects to pass to the DLX algorithm.
 
-pub trait Callback {
-    fn on_solution(&mut self, _sol: Vec<usize>, _mat: &mut Matrix) {}
-    fn on_iteration(&mut self, _mat: &mut Matrix) {}
-    fn on_abort(&mut self, _mat: &mut Matrix) {}
-    fn on_finish(&mut self) {}
-}
+use crate::dlx::{Matrix, Callback};
 
 #[derive(Default)]
 pub struct SolutionCallback {

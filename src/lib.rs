@@ -1,7 +1,7 @@
-//! Asynchronous [exact cover] solver library using Knuth's [dancing links] algorithm.
+//! Asynchronous [exact cover] solver library using Knuth's [dancing links (DLX)] algorithm.
 //! 
 //! [exact cover]: https://en.wikipedia.org/wiki/Exact_cover
-//! [dancing links]: https://en.wikipedia.org/wiki/Dancing_Links
+//! [dancing links (DLX)]: https://en.wikipedia.org/wiki/Dancing_Links
 //! 
 //! ⚠️ This library is working in progress and the API is highly likely to be changed.
 //! 

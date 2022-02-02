@@ -1,3 +1,9 @@
+//! Provides a generic problem type that defines constraints and subsets.
+//! 
+//! Every complex exact cover problem (such as polyomino packing or Sudoku) first generates
+//! this basic [`Problem`] instance before handing it to a solver.
+//! To see examples of more complex problems, see [`problems`](crate::problems) module.
+
 use std::hash::Hash;
 use indexmap::{IndexMap, IndexSet};
 

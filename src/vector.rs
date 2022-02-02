@@ -1,3 +1,5 @@
+//! Basic Euclidean vector types.
+
 use std::ops;
 
 const COS: [i32; 4] = [1, 0, -1, 0];
