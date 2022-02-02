@@ -388,14 +388,16 @@ mod tests {
         let gen_prob = prob.generate_problem();
         
         let mut solver = Solver::new(gen_prob);
+        let mut solutions = vec![];
         solver.run();
 
-        let sol: Vec<_> = solver.filter_map(|e| match e {
-            SolverEvent::SolutionFound(s) => Some(s),
-            _ => None,
-        }).collect();
+        for event in solver {
+            if let SolverEvent::SolutionFound(sol) = event {
+                solutions.push(sol);
+            }
+        }
 
-        assert_eq!(sol.len(), 4);
+        assert_eq!(solutions.len(), 4);
 
         Ok(())
     }

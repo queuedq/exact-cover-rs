@@ -91,15 +91,31 @@ impl<N: Value, C: Value> Solver<N, C> {
     }
 }
 
-// TODO: use stream instead of iterator
-impl<N: Value, C: Value> Iterator for Solver<N, C> {
+/// An iterator of [`SolverEvent`]s that a solver emits.
+pub struct SolverIter<N: Value, C: Value> {
+    solver: Solver<N, C>,
+}
+
+impl<N: Value, C: Value> Iterator for SolverIter<N, C> {
     type Item = SolverEvent<N>;
 
     fn next(&mut self) -> Option<SolverEvent<N>> {
-        match self.solver_thread.as_ref()?.recv() {
-            Ok(e) => Some(self.map_event(e)),
-            Err(_) => None,
+        if let Ok(e) = self.solver.solver_thread.as_ref()?.recv() {
+            Some(self.solver.map_event(e))
+        } else {
+            None
         }
+    }
+}
+
+// TODO: also provide stream
+impl<N: Value, C: Value> IntoIterator for Solver<N, C> {
+    type Item = SolverEvent<N>;
+    type IntoIter = SolverIter<N, C>;
+
+    /// Returns an iterator of [`SolverEvent`]s that a solver emits.
+    fn into_iter(self) -> Self::IntoIter {
+        SolverIter { solver: self }
     }
 }
 
@@ -228,13 +244,15 @@ mod tests {
         prob.add_subset("F", vec![2, 3]);
 
         let mut solver = Solver::new(prob);
+        let mut solutions = vec![];
         solver.run();
 
-        let sol: Vec<_> = solver.filter_map(|e| match e {
-            SolverEvent::SolutionFound(s) => Some(s),
-            _ => None,
-        }).collect();
+        for event in solver {
+            if let SolverEvent::SolutionFound(sol) = event {
+                solutions.push(sol);
+            }
+        }
 
-        assert_eq!(sol.len(), 4);
+        assert_eq!(solutions.len(), 4);
     }
 }

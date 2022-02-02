@@ -72,25 +72,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     println!("Solving the problem...");
     let start_time = Instant::now();
+    let mut solutions = vec![];
     solver.run();
-
-    let sol: Vec<_> = solver.filter_map(|e| match e {
-        SolverEvent::SolutionFound(s) => Some(s),
-        _ => None,
-    }).collect();
-    let elapsed_time = start_time.elapsed();
-
-    println!("Done!");
-    for solution in &sol {
-        println!();
-        print_sol(&prob, &solution);
+    
+    for event in solver {
+        if let SolverEvent::SolutionFound(sol) = event {
+            print_sol(&prob, &sol);
+            println!();
+            solutions.push(sol);
+        }
     }
+
+    // This does not measure the exact time because printing the solutions takes up a nonnegligible fraction.
+    // To measure the exact time, print the solutions after this line.
+    let elapsed_time = start_time.elapsed();
 
     println!(
         "Found {:?} solutions, w/ rotations/reflections. ({:?}s)",
-        sol.len(),
+        solutions.len(),
         elapsed_time.as_millis() as f64 / 1000.
     );
-
+    
     Ok(())
 }
