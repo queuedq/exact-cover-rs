@@ -159,11 +159,27 @@ impl Polyomino {
 // Board
 // ========
 
+/// A board cell.
+#[derive(PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
+pub enum Cell {
+    /// A cell that has to be filled by a piece.
+    Filled,
+    /// A cell that has to be left empty.
+    Empty,
+    /// A cell that can be either filled or left empty.
+    Wildcard,
+}
+
+impl Default for Cell {
+    fn default() -> Self { Cell::Empty }
+}
+
 /// A board to fit the pieces in.
 #[derive(Default)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Board {
-    cells: Vec<Vec<bool>>,
+    cells: Vec<Vec<Cell>>,
     size: Vector2D,
 }
 
@@ -171,11 +187,9 @@ impl Board {
     /// Creates a new board from a 2D boolean list.
     /// 
     /// It uses the inverted y-axis coordinate system.
-    /// `true` corresponds to an empty cell where pieces can fit in.
-    /// If `cells[y][x]` is true, then the cell `(x, y)` is a corresponding empty cell in the board.
-    pub fn new(cells: Vec<Vec<bool>>) -> Board {
+    pub fn new(cells: Vec<Vec<Cell>>) -> Board {
         // TODO: validate parameter
-        assert_eq!(cells.len() > 0, true);
+        assert!(cells.len() > 0);
         
         Board {
             size: Vector2D {
@@ -189,11 +203,18 @@ impl Board {
     /// Convenience function to create a new `Board` from a bytes array.
     /// 
     /// It uses the inverted y-axis coordinate system.
-    /// `.` represents an empty cell to fit pieces in.
-    /// Any other byte represents an unused cell. (usually `#`)
+    /// - `#` represents a filled cell.
+    /// - `?` represents a wildcard cell.
+    /// - Any other byte represents an emtpy cell. (usually `.`)
     pub fn from_bytes_array(array: &[&[u8]]) -> Board {
-        let cells: Vec<Vec<bool>> = array.iter().map(|&s| {
-            s.iter().map(|&c| { c == b'.' }).collect()
+        let cells: Vec<Vec<Cell>> = array.iter().map(|&s| {
+            s.iter().map(|&c| {
+                match c {
+                    b'#' => Cell::Filled,
+                    b'?' => Cell::Wildcard,
+                    _ => Cell::Empty,
+                }
+            }).collect()
         }).collect();
 
         Board::new(cells)
@@ -202,9 +223,7 @@ impl Board {
     /// Returns a 2D boolean list representing this board.
     /// 
     /// It uses the inverted y-axis coordinate system.
-    /// `true` corresponds to an empty cell where pieces can fit in.
-    /// If `cells[y][x]` is true, then the cell `(x, y)` is a corresponding empty cell in the board.
-    pub fn cells(&self) -> &Vec<Vec<bool>> { &self.cells }
+    pub fn cells(&self) -> &Vec<Vec<Cell>> { &self.cells }
     /// Returns the size of the board.
     pub fn size(&self) -> Vector2D { self.size }
 
@@ -219,7 +238,7 @@ impl Board {
         for c in piece.orient(orien).translated_cells(trans) {
             let Vector2D { x, y } = c;
             if self.out_of_bounds(c) { return false }
-            if !self.cells[y as usize][x as usize] { return false }
+            if self.cells[y as usize][x as usize] == Cell::Empty { return false }
         }
         true
     }
@@ -251,6 +270,8 @@ pub enum CompoundConstraint<N> {
 pub struct PolyominoPacking<N: Value> {
     board: Board,
     pieces: IndexMap<N, Polyomino>,
+    min: IndexMap<N, usize>,
+    max: IndexMap<N, usize>,
 }
 
 impl<N: Value> PolyominoPacking<N> {
@@ -261,15 +282,22 @@ impl<N: Value> PolyominoPacking<N> {
     pub fn board_mut(&mut self) -> &mut Board { &mut self.board }
     /// Returns a reference to the pieces.
     pub fn pieces(&self) -> &IndexMap<N, Polyomino> { &self.pieces }
-    /// Returns a mutable reference to the pieces.
-    pub fn pieces_mut(&mut self) -> &mut IndexMap<N, Polyomino> { &mut self.pieces }
 
     /// Adds a piece to the problem.
     /// 
-    /// If the piece name already exists,
-    /// it updates the piece of that name with the given new piece.
+    /// If the piece name already exists, it replaces the corresponding piece.
     pub fn add_piece(&mut self, name: N, piece: Polyomino) {
-        self.pieces.insert(name, piece);
+        self.pieces.insert(name.clone(), piece);
+        self.min.insert(name.clone(), 1);
+        self.max.insert(name.clone(), 1);
+    }
+
+    /// Sets a piece's multiplicity range.
+    pub fn set_piece_range(&mut self, name: N, min: usize, max: usize) {
+        if self.pieces.contains_key(&name) {
+            self.min[&name] = min;
+            self.max[&name] = max;
+        }
     }
 
     /// Generates an exact cover problem instance ([`Problem`]).
@@ -278,14 +306,20 @@ impl<N: Value> PolyominoPacking<N> {
 
         // Piece constraints
         for (name, _) in &self.pieces {
-            prob.add_constraint(CompoundConstraint::Piece(name.clone()));
+            prob.add_constraint(CompoundConstraint::Piece(name.clone()), self.min[name], self.max[name]);
         }
 
         // Cell contraints
         for y in 0..self.board.size.y {
             for x in 0..self.board.size.x {
-                if self.board.cells[y as usize][x as usize] {
-                    prob.add_constraint(CompoundConstraint::Cell(Vector2D { x, y }));
+                match self.board.cells[y as usize][x as usize] {
+                    Cell::Filled => prob.add_constraint(
+                        CompoundConstraint::Cell(Vector2D { x, y }), 1, 1
+                    ),
+                    Cell::Wildcard => prob.add_constraint(
+                        CompoundConstraint::Cell(Vector2D { x, y }), 0, 1
+                    ),
+                    Cell::Empty => ()
                 }
             }
         }
@@ -369,9 +403,9 @@ mod tests {
     #[test]
     fn problem_can_be_solved() -> Result<(), Box<dyn Error>> {
         let board = Board::from_bytes_array(&[
-            b"...",
-            b"...",
-            b"...",
+            b"###",
+            b"###",
+            b"###",
         ]);
 
         let p1 = Polyomino::from_bytes_array(&[

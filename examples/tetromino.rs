@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::time::Instant;
 use exact_cover::vector::Vector2D;
-use exact_cover::problems::polyomino::{Polyomino, PolyominoPacking, Board, CompoundName};
+use exact_cover::problems::polyomino::{Polyomino, PolyominoPacking, Cell, Board, CompoundName};
 use exact_cover::{Solver, SolverEvent};
 
 fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
@@ -9,7 +9,13 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
     
     for y in 0..prob.board().size().y {
         let row: Vec<char> = prob.board().cells()[y as usize].iter()
-            .map(|c| { if *c { '.' } else { ' ' } })
+            .map(|c| {
+                match *c {
+                    Cell::Filled => '.',
+                    Cell::Wildcard => '.',
+                    Cell::Empty => ' ',
+                }
+            })
             .collect();
         buff.push(row);
     }
@@ -31,11 +37,11 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let board = Board::from_bytes_array(&[
-        b"##...",
-        b"#....",
-        b"#....",
-        b"#....",
-        b".....",
+        b"..###",
+        b".####",
+        b".####",
+        b".####",
+        b"#####",
     ]);
 
     let tet_i = Polyomino::from_bytes_array(&[
