@@ -150,7 +150,7 @@ impl Matrix {
 
         // === Task 1 ===
         // Handle callbacks
-        if self.all_col_fulfilled() { // All columns fulfilled, solution found
+        if self.pool[Matrix::HEAD].right == Matrix::HEAD {
             callback.on_solution(self.partial_sol.clone(), self);
         }
         callback.on_iteration(self);
@@ -530,17 +530,6 @@ impl Matrix {
         if weight[c] > max[c] { return false; }
         if weight[c] + col_size[c] < min[c] { return false; }
         return true;
-    }
-
-    /// Returns if all columns are fulfilled (which means a solution).
-    #[inline]
-    fn all_col_fulfilled(&self) -> bool {
-        let mut c = self.pool[Matrix::HEAD].right;
-        while c != Matrix::HEAD {
-            if !self.col_fulfilled(c) { return false; }
-            c = self.pool[c].right;
-        }
-        true
     }
 }
 

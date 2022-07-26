@@ -270,7 +270,6 @@ mod tests {
         prob.add_subset("E", vec![1, 2]);
         prob.add_subset("F", vec![2, 3]);
 
-        println!("{:?}", Solver::generate_matrix(&prob));
         let mut solver = Solver::new(prob);
         let mut solutions = vec![];
         solver.run();
@@ -281,6 +280,27 @@ mod tests {
             }
         }
 
+        assert_eq!(solutions.len(), 4);
+    }
+
+    #[test]
+    fn solver_can_solve_problem_with_multiplicity() {
+        let mut prob = Problem::default();
+        prob.add_constraint(1, 0, 1);
+        prob.add_constraint(2, 0, 1);
+        prob.add_subset("B", vec![1]);
+        prob.add_subset("C", vec![2]);
+
+        let mut solver = Solver::new(prob);
+        let mut solutions = vec![];
+        solver.run();
+        
+        for event in solver {
+            if let SolverEvent::SolutionFound(sol) = event {
+                solutions.push(sol);
+            }
+        }
+        
         assert_eq!(solutions.len(), 4);
     }
 }
