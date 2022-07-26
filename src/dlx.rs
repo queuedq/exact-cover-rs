@@ -1,4 +1,4 @@
-//! A low-level API for dancing links (DLX) algorithm.
+//! A low-level API for original dancing links (DLX) algorithm.
 //! 
 //! If you are looking for a [`Problem`](crate::problem::Problem) solver API,
 //! see the [`solver`](crate::solver) module.

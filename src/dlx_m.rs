@@ -1,5 +1,6 @@
-//! A low-level API for dancing links (DLX) algorithm.
+//! A low-level API for dancing links (DLX) algorithm with multiplicity.
 //! 
+//! This module extends [`dlx`](crate::dlx) module to handle multiplicity.
 //! If you are looking for a [`Problem`](crate::problem::Problem) solver API,
 //! see the [`solver`](crate::solver) module.
 
@@ -30,9 +31,9 @@ pub struct Matrix {
     weight: Vec<usize>,
 
     partial_sol: Vec<usize>,
-    col_stack: Vec<usize>,
-    row_stack: Vec<usize>,
-    task_stack: Vec<usize>,
+    _col_stack: Vec<usize>,
+    _row_stack: Vec<usize>,
+    _task_stack: Vec<usize>,
     abort_requested: bool,
 }
 
@@ -57,9 +58,9 @@ impl Default for Matrix {
             weight: vec![0],
 
             partial_sol: vec![],
-            col_stack: vec![],
-            row_stack: vec![],
-            task_stack: vec![],
+            _col_stack: vec![],
+            _row_stack: vec![],
+            _task_stack: vec![],
             abort_requested: false,
         }
     }
@@ -71,14 +72,14 @@ impl Matrix {
 
     pub fn new(col_cnt: usize) -> Matrix {
         // Set multiplicity to [1, 1] by default
-        let mut col_mul_default = vec![1; col_cnt + 1];
-        col_mul_default[0] = 0;
+        let mut ones = vec![1; col_cnt + 1];
+        ones[0] = 0;
 
         let mut mat = Matrix {
             col_cnt,
             col_size: vec![0; col_cnt + 1],
-            min: col_mul_default.clone(),
-            max: col_mul_default.clone(),
+            min: ones.clone(),
+            max: ones.clone(),
             weight: vec![0; col_cnt + 1],
             ..Matrix::default()
         };
@@ -149,7 +150,7 @@ impl Matrix {
 
         // === Task 1 ===
         // Handle callbacks
-        if self.pool[Matrix::HEAD].right == Matrix::HEAD {
+        if self.all_col_fulfilled() { // All columns fulfilled, solution found
             callback.on_solution(self.partial_sol.clone(), self);
         }
         callback.on_iteration(self);
@@ -167,7 +168,7 @@ impl Matrix {
         // We don't have any fulfilled columns remaining in the matrix,
         // because every column is covered as soon as it is fulfilled.
         let c = self.choose_best_col(); // TODO-A: modify find best column logic
-        if !self.col_fulfillable(c) { return; }
+        if c == Matrix::HEAD || !self.col_fulfillable(c) { return; }
         
         // [COVER-FULL] If column c becomes full after selecting any row, cover it in advance.
         self.weight[c] += 1; // will select a row
@@ -194,7 +195,7 @@ impl Matrix {
             
             // If column c becomes unfulfillable after selecting a row, don't recurse.
             // TODO: (optimization) Compare performance with/without the condition below.
-            if self.col_fulfillable(r) {
+            if self.col_fulfillable(c) {
                 self._recursive_solve(callback);
             }
 
@@ -229,76 +230,76 @@ impl Matrix {
         }
     }
 
-    /// An iterative DLX algorithm.
-    /// TODO: Fix it to match the new recursive algorithm.
-    fn _iterative_solve(&mut self, callback: &mut impl Callback) {
-        self.task_stack.push(1);
+    // // TODO: Fix it to match the new recursive algorithm.
+    // /// An iterative DLX algorithm.
+    // fn _iterative_solve(&mut self, callback: &mut impl Callback) {
+    //     self.task_stack.push(1);
 
-        while !self.task_stack.is_empty() {
-            match self.task_stack.pop().unwrap() {
-                1 => {
-                    // Handle callbacks
-                    if self.pool[Matrix::HEAD].right == Matrix::HEAD {
-                        callback.on_solution(self.partial_sol.clone(), self);
-                    }
+    //     while !self.task_stack.is_empty() {
+    //         match self.task_stack.pop().unwrap() {
+    //             1 => {
+    //                 // Handle callbacks
+    //                 if self.pool[Matrix::HEAD].right == Matrix::HEAD {
+    //                     callback.on_solution(self.partial_sol.clone(), self);
+    //                 }
 
-                    callback.on_iteration(self);
+    //                 callback.on_iteration(self);
 
-                    if self.abort_requested {
-                        callback.on_abort(self);
-                        return
-                    }
+    //                 if self.abort_requested {
+    //                     callback.on_abort(self);
+    //                     return
+    //                 }
 
-                    // MRV (minimum remaining values) heuristic
-                    // Choose a column with minimal branching factor
-                    let (col, size) = self.choose_best_col();
-                    if size == 0 { continue; } // Dead end
+    //                 // MRV (minimum remaining values) heuristic
+    //                 // Choose a column with minimal branching factor
+    //                 let (col, size) = self.choose_best_col();
+    //                 if size == 0 { continue; } // Dead end
 
-                    // Select a row to cover the selected column
-                    self.cover_col(col);
+    //                 // Select a row to cover the selected column
+    //                 self.cover_col(col);
 
-                    let r = self.pool[col].down;
-                    // End of chunk
-                    self.col_stack.push(col);
-                    self.row_stack.push(r);
-                    self.task_stack.push(2);
-                }
-                2 => {
-                    // Restore variables
-                    let r = *self.row_stack.last().unwrap();
+    //                 let r = self.pool[col].down;
+    //                 // End of chunk
+    //                 self.col_stack.push(col);
+    //                 self.row_stack.push(r);
+    //                 self.task_stack.push(2);
+    //             }
+    //             2 => {
+    //                 // Restore variables
+    //                 let r = *self.row_stack.last().unwrap();
                     
-                    self.select_row(r);
-                    self.partial_sol.push(self.pool[r].row);
+    //                 self.select_row(r);
+    //                 self.partial_sol.push(self.pool[r].row);
                     
-                    // End of chunk
-                    self.task_stack.push(3);
-                    self.task_stack.push(1);
-                }
-                3 => {
-                    // Restore variables
-                    let col = *self.col_stack.last().unwrap();
-                    let mut r = self.row_stack.pop().unwrap();
+    //                 // End of chunk
+    //                 self.task_stack.push(3);
+    //                 self.task_stack.push(1);
+    //             }
+    //             3 => {
+    //                 // Restore variables
+    //                 let col = *self.col_stack.last().unwrap();
+    //                 let mut r = self.row_stack.pop().unwrap();
                     
-                    self.unselect_row(r);
-                    self.partial_sol.pop();
+    //                 self.unselect_row(r);
+    //                 self.partial_sol.pop();
                     
-                    r = self.pool[r].down;
-                    // End of chunk
-                    if r == col {
-                        // Out of while loop
-                        self.uncover_col(col);
-                        self.col_stack.pop();
-                    } else {
-                        self.row_stack.push(r);
-                        self.task_stack.push(2);
-                    }
-                }
-                _ => { panic!("Unexpected implementation error"); }
-            }
-        }
+    //                 r = self.pool[r].down;
+    //                 // End of chunk
+    //                 if r == col {
+    //                     // Out of while loop
+    //                     self.uncover_col(col);
+    //                     self.col_stack.pop();
+    //                 } else {
+    //                     self.row_stack.push(r);
+    //                     self.task_stack.push(2);
+    //                 }
+    //             }
+    //             _ => { panic!("Unexpected implementation error"); }
+    //         }
+    //     }
 
-        callback.on_finish()
-    }
+    //     callback.on_finish()
+    // }
 }
 
 // Helper methods
@@ -492,7 +493,7 @@ impl Matrix {
     
     // ======== Level 0 ========
 
-    /// Chooses the column with the lowest `col_size`. (MRV Heuristic).
+    /// Returns the column with the lowest `col_size`. (MRV Heuristic).
     #[inline]
     fn choose_best_col(&self) -> usize {
         let mut best_col = self.pool[Matrix::HEAD].right;
@@ -529,6 +530,17 @@ impl Matrix {
         if weight[c] > max[c] { return false; }
         if weight[c] + col_size[c] < min[c] { return false; }
         return true;
+    }
+
+    /// Returns if all columns are fulfilled (which means a solution).
+    #[inline]
+    fn all_col_fulfilled(&self) -> bool {
+        let mut c = self.pool[Matrix::HEAD].right;
+        while c != Matrix::HEAD {
+            if !self.col_fulfilled(c) { return false; }
+            c = self.pool[c].right;
+        }
+        true
     }
 }
 
