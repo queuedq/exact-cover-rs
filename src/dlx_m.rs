@@ -5,8 +5,7 @@
 //! see the [`solver`](crate::solver) module.
 
 /// A single node of [`Matrix`].
-#[derive(Default)]
-#[cfg_attr(test, derive(Debug))]
+#[derive(Default, Debug)]
 struct Node {
     // row, col: 1-based b/c of head node (only internally)
     row: usize,
@@ -212,6 +211,7 @@ impl Matrix {
         self.weight[c] -= 1;
         if self.col_fulfilled(c) {
             // All rows are already hidden, so just hide the column from the column list.
+            // It also works if covered.
             let Node { left, right, .. } = self.pool[c];
             self.pool[left].right = right;
             self.pool[right].left = left;
@@ -221,7 +221,7 @@ impl Matrix {
             self.pool[left].right = c;
             self.pool[right].left = c;
         }
-
+        
         // [UNDO] Undo all modifications
         if covered {
             self.uncover_col(c);
@@ -429,7 +429,7 @@ impl Matrix {
         self.hide_row(r);
         let Node { col: c, down: d, .. } = self.pool[r];
         self.pool[c].down = d;
-        self.pool[d].down = c;
+        self.pool[d].up = c;
     }
 
     /// Untweaks all rows starting from r.
@@ -442,7 +442,7 @@ impl Matrix {
             self.unhide_row(r);
             let Node { up: u, down: d, .. } = self.pool[r];
             self.pool[u].down = r;
-            self.pool[d].down = r;
+            self.pool[d].up = r;
             r = d;
         }
     }
