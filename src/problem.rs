@@ -5,7 +5,7 @@
 //! To see examples of more complex problems, see [`problems`](crate::problems) module.
 
 use std::hash::Hash;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::{IndexMap};
 
 /// Base trait for subset names and constraints.
 pub trait Value: Clone + Hash + Eq {}
@@ -13,57 +13,59 @@ impl<T: Clone + Hash + Eq> Value for T {}
 
 /// An exact cover problem instance.
 /// 
-/// The subsets are identified with a name with a type `N`.
-/// The elements of the set are called constraints and have a type `C`.
+/// The set elements are of type `E`.
+/// They form constraints together with a multiplicity range.
+/// The subsets are identified by names of type `N`.
 /// 
-/// # Order
+/// # Ordering
 /// 
-/// The order of subsets and constraints is determined by the insertion order.
-/// It uses [`IndexMap`] and [`IndexSet`] internally to keep track of the order.
+/// The order of the subsets and the elements is determined by the insertion order.
+/// It uses [`IndexMap`] internally to keep track of the order.
 /// 
 /// The subset order can affect the order of the solutions and
 /// the algorithm performance, but it would not be a significant effect
 /// as our algorithm uses the MRV heuristic.
 #[derive(Clone)]
 #[cfg_attr(test, derive(Debug))]
-pub struct Problem<N: Value, C: Value> { // TOOD: Constraint will be more complex type
-    constraints: IndexSet<C>,
-    subsets: IndexMap<N, Vec<C>>,
+pub struct Problem<N: Value, E: Value> {
+    constraints: IndexMap<E, (usize, usize)>,
+    subsets: IndexMap<N, Vec<E>>,
 }
 
-impl<N: Value, C: Value> Default for Problem<N, C> {
-    fn default() -> Self {
-        Problem {
-            constraints: Default::default(),
-            subsets: Default::default(),
-        }
+impl<N: Value, E: Value> Default for Problem<N, E> {
+    fn default() -> Problem<N, E> {
+        Problem { constraints: Default::default(), subsets: Default::default() }
     }
 }
 
-impl<N: Value, C: Value> Problem<N, C> {
+impl<N: Value, E: Value> Problem<N, E> {
     // TODO: hide IndexMap/IndexSet from API
-    /// Returns a reference to the subsets of the problem.
-    pub fn subsets(&self) -> &IndexMap<N, Vec<C>> { &self.subsets }
     /// Returns a reference to the constraints of the problem.
-    pub fn constraints(&self) -> &IndexSet<C> { &self.constraints }
+    pub fn constraints(&self) -> &IndexMap<E, (usize, usize)> { &self.constraints }
+    /// Returns a reference to the subsets of the problem.
+    pub fn subsets(&self) -> &IndexMap<N, Vec<E>> { &self.subsets }
 
     /// Adds a subset to the problem.
     /// 
-    /// If the subset name already exists,
-    /// it updates the subset of that name with the given new subset.
-    pub fn add_subset(&mut self, name: N, subset: Vec<C>) {
+    /// If the subset name already exists, it replaces the corresponding subset.
+    pub fn add_subset(&mut self, name: N, subset: Vec<E>) {
         self.subsets.insert(name, subset);
     }
-    
-    /// Adds a constraint (set element) to the problem.
-    pub fn add_constraint(&mut self, constraint: C) {
-        self.constraints.insert(constraint);
+
+    /// Adds a constraint with a multiplicity range.
+    pub fn add_constraint(&mut self, elem: E, min: usize, max: usize) {
+        self.constraints.insert(elem, (min, max));
+    }
+
+    /// Adds a constraint that has to be covered exactly once.
+    pub fn add_exact_constraint(&mut self, elem: E) {
+        self.add_constraint(elem, 1, 1);
     }
     
-    /// Adds several constraints to the problem.
-    pub fn add_constraints<I: IntoIterator<Item = C>>(&mut self, constraints: I) {
+    /// Adds several exact constraints.
+    pub fn add_exact_constraints<I: IntoIterator<Item = E>>(&mut self, constraints: I) {
         for constraint in constraints {
-            self.constraints.insert(constraint);
+            self.add_exact_constraint(constraint);
         }
     }
 }
@@ -76,7 +78,7 @@ mod tests {
     #[test]
     fn problem_can_be_created() {
         let mut prob = Problem::default();
-        prob.add_constraints(1..=7);
+        prob.add_exact_constraints(1..=7);
         prob.add_subset("A", vec![3, 5, 6]);
         prob.add_subset("B", vec![1, 4, 7]);
         prob.add_subset("C", vec![2, 3, 6]);
