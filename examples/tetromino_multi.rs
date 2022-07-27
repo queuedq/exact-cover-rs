@@ -37,84 +37,26 @@ fn print_sol(prob: &PolyominoPacking<&str>, sol: &Vec<CompoundName<&str>>) {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let board = Board::from_bytes_array(&[
-        b"########",
-        b"########",
-        b"########",
-        b"###..###",
-        b"###..###",
-        b"########",
-        b"########",
-        b"########",
+        b"???.",
+        b"?##?",
+        b"?##?",
     ]);
 
-    let pento_f = Polyomino::from_bytes_array(&[
-        b".##",
-        b"##.",
-        b".#.",
+    let tet_o = Polyomino::from_bytes_array(&[
+        b"##",
+        b"##",
     ])?;
-    let pento_i = Polyomino::from_bytes_array(&[
-        b"#####",
-    ])?;
-    let pento_l = Polyomino::from_bytes_array(&[
-        b"####",
-        b"#...",
-    ])?;
-    let pento_n = Polyomino::from_bytes_array(&[
-        b".###",
-        b"##..",
-    ])?;
-    let pento_p = Polyomino::from_bytes_array(&[
-        b"###",
-        b".##",
-    ])?;
-    let pento_t = Polyomino::from_bytes_array(&[
+    let tet_t = Polyomino::from_bytes_array(&[
         b"###",
         b".#.",
-        b".#.",
-    ])?;
-    let pento_u = Polyomino::from_bytes_array(&[
-        b"#.#",
-        b"###",
-    ])?;
-    let pento_v = Polyomino::from_bytes_array(&[
-        b"#..",
-        b"#..",
-        b"###",
-    ])?;
-    let pento_w = Polyomino::from_bytes_array(&[
-        b"#..",
-        b"##.",
-        b".##",
-    ])?;
-    let pento_x = Polyomino::from_bytes_array(&[
-        b".#.",
-        b"###",
-        b".#.",
-    ])?;
-    let pento_y = Polyomino::from_bytes_array(&[
-        b"####",
-        b".#..",
-    ])?;
-    let pento_z = Polyomino::from_bytes_array(&[
-        b"##.",
-        b".#.",
-        b".##",
     ])?;
     
     let mut prob = PolyominoPacking::default();
     *prob.board_mut() = board;
-    prob.add_piece("F", pento_f);
-    prob.add_piece("I", pento_i);
-    prob.add_piece("L", pento_l);
-    prob.add_piece("N", pento_n);
-    prob.add_piece("P", pento_p);
-    prob.add_piece("T", pento_t);
-    prob.add_piece("U", pento_u);
-    prob.add_piece("V", pento_v);
-    prob.add_piece("W", pento_w);
-    prob.add_piece("X", pento_x);
-    prob.add_piece("Y", pento_y);
-    prob.add_piece("Z", pento_z);
+    prob.add_piece("O", tet_o);
+    prob.set_piece_range("O", 0, 2);
+    prob.add_piece("T", tet_t);
+    prob.set_piece_range("T", 0, 2);
     
     println!("Generating the problem...");
     let gen_prob = prob.generate_problem();
@@ -142,7 +84,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         solutions.len(),
         elapsed_time.as_millis() as f64 / 1000.
     );
-
+    
     Ok(())
 }
-

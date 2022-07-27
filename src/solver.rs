@@ -4,7 +4,9 @@ use std::thread;
 use std::thread::{JoinHandle};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
-use crate::dlx::{Matrix, Callback};
+use crate::dlx::callback::{Callback};
+// use crate::dlx::dlx::{Matrix};
+use crate::dlx::dlx_m::{Matrix};
 use crate::problem::{Problem, Value};
 
 /// Events that a solver emits.
@@ -32,29 +34,54 @@ enum SolverThreadEvent {
 }
 
 /// A solver for a [`Problem`] instance.
-pub struct Solver<N: Value, C: Value> {
-    problem: Problem<N, C>,
+pub struct Solver<N: Value, E: Value> {
+    problem: Problem<N, E>,
     solver_thread: Option<SolverThread>,
 }
 
-impl<N: Value, C: Value> Solver<N, C> {
+impl<N: Value, E: Value> Solver<N, E> {
     /// Creates a new solver that solves `problem`.
-    pub fn new(problem: Problem<N, C>) -> Solver<N, C> {
+    pub fn new(problem: Problem<N, E>) -> Solver<N, E> {
         Solver {
             problem,
             solver_thread: None,
         }
     }
+    
+    pub fn generate_matrix(problem: &Problem<N, E>) -> Matrix {
+        // TODO: validate problem
+        Solver::generate_multi_matrix(problem)
+    }
 
-    pub fn generate_matrix(problem: &Problem<N, C>) -> Matrix {
+    // TODO: use original algorithm if applicable
+
+    // fn generate_exact_matrix(problem: &Problem<N, E>) -> Matrix {
+    //     let constraints = problem.constraints();
+    //     let names = problem.subsets().keys();
+    //     let mut mat = Matrix::new(constraints.len());
+
+    //     for name in names {
+    //         let row: Vec<_> = problem.subsets()[name].iter()
+    //             .map(|e| { constraints.get_index_of(e).unwrap() + 1 })
+    //             .collect();
+    //         mat.add_row(&row);
+    //     }
+    //     mat
+    // }
+
+    fn generate_multi_matrix(problem: &Problem<N, E>) -> Matrix {
+        let constraints = problem.constraints();
         let names = problem.subsets().keys();
+        let mut mat = Matrix::new(constraints.len());
 
-        let mut mat = Matrix::new(problem.constraints().len());
+        for (e, &(min, max)) in constraints {
+            mat.set_multiplicity(constraints.get_index_of(e).unwrap() + 1, min, max);
+        }
+
         for name in names {
-            let row: Vec<_> = problem.subsets()[name].iter().map(|x| {
-                // TODO: raise error when constraint is not existent
-                problem.constraints().get_index_of(x).unwrap() + 1
-            }).collect();
+            let row: Vec<_> = problem.subsets()[name].iter()
+                .map(|e| { constraints.get_index_of(e).unwrap() + 1 })
+                .collect();
             mat.add_row(&row);
         }
         mat
@@ -95,11 +122,11 @@ impl<N: Value, C: Value> Solver<N, C> {
 }
 
 /// An iterator of [`SolverEvent`]s that a solver emits.
-pub struct SolverIter<N: Value, C: Value> {
-    solver: Solver<N, C>,
+pub struct SolverIter<N: Value, E: Value> {
+    solver: Solver<N, E>,
 }
 
-impl<N: Value, C: Value> Iterator for SolverIter<N, C> {
+impl<N: Value, E: Value> Iterator for SolverIter<N, E> {
     type Item = SolverEvent<N>;
 
     fn next(&mut self) -> Option<SolverEvent<N>> {
@@ -112,9 +139,9 @@ impl<N: Value, C: Value> Iterator for SolverIter<N, C> {
 }
 
 // TODO: also provide stream
-impl<N: Value, C: Value> IntoIterator for Solver<N, C> {
+impl<N: Value, E: Value> IntoIterator for Solver<N, E> {
     type Item = SolverEvent<N>;
-    type IntoIter = SolverIter<N, C>;
+    type IntoIter = SolverIter<N, E>;
 
     /// Returns an iterator of [`SolverEvent`]s that a solver emits.
     fn into_iter(self) -> Self::IntoIter {
@@ -192,7 +219,7 @@ impl ThreadCallback {
     }
 }
 
-impl Callback for ThreadCallback {
+impl Callback<Matrix> for ThreadCallback {
     fn on_solution(&mut self, sol: Vec<usize>, _mat: &mut Matrix) {
         self.event.send(SolverThreadEvent::SolutionFound(sol)).ok();
     }
@@ -238,7 +265,7 @@ mod tests {
     #[test]
     fn solver_can_solve_problem() {
         let mut prob = Problem::default();
-        prob.add_constraints(1..=3);
+        prob.add_exact_constraints(1..=3);
         prob.add_subset("A", vec![1, 2, 3]);
         prob.add_subset("B", vec![1]);
         prob.add_subset("C", vec![2]);
@@ -256,6 +283,27 @@ mod tests {
             }
         }
 
+        assert_eq!(solutions.len(), 4);
+    }
+
+    #[test]
+    fn solver_can_solve_problem_with_multiplicity() {
+        let mut prob = Problem::default();
+        prob.add_constraint(1, 0, 1);
+        prob.add_constraint(2, 0, 1);
+        prob.add_subset("B", vec![1]);
+        prob.add_subset("C", vec![2]);
+
+        let mut solver = Solver::new(prob);
+        let mut solutions = vec![];
+        solver.run();
+        
+        for event in solver {
+            if let SolverEvent::SolutionFound(sol) = event {
+                solutions.push(sol);
+            }
+        }
+        
         assert_eq!(solutions.len(), 4);
     }
 }

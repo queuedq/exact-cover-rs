@@ -19,7 +19,7 @@
 //! 
 //! fn main() {
 //!     let mut prob = Problem::default();
-//!     prob.add_constraints(1..=3);
+//!     prob.add_exact_constraints(1..=3);
 //!     prob.add_subset("A", vec![1, 2, 3]);
 //!     prob.add_subset("B", vec![1]);
 //!     prob.add_subset("C", vec![2]);
@@ -60,8 +60,6 @@
 pub mod vector;
 
 pub mod dlx;
-pub mod callback;
-
 pub mod problem;
 pub mod solver;
 
