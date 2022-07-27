@@ -1,7 +1,6 @@
 //! A low-level API for original dancing links (DLX) algorithm.
-//! 
-//! If you are looking for a [`Problem`](crate::problem::Problem) solver API,
-//! see the [`solver`](crate::solver) module.
+
+use crate::dlx::callback::{Callback};
 
 /// A single node of [`Matrix`].
 #[derive(Default)]
@@ -29,14 +28,6 @@ pub struct Matrix {
     row_stack: Vec<usize>,
     task_stack: Vec<usize>,
     abort_requested: bool,
-}
-
-/// An interface of callback objects to pass to the DLX algorithm.
-pub trait Callback {
-    fn on_solution(&mut self, _sol: Vec<usize>, _mat: &mut Matrix) {}
-    fn on_iteration(&mut self, _mat: &mut Matrix) {}
-    fn on_abort(&mut self, _mat: &mut Matrix) {}
-    fn on_finish(&mut self) {}
 }
 
 impl Default for Matrix {
@@ -101,7 +92,7 @@ impl Matrix {
 impl Matrix {
     pub fn solve(
         &mut self,
-        callback: &mut impl Callback,
+        callback: &mut impl Callback<Matrix>,
     ) {
         self.abort_requested = false;
         self.iterative_solve(callback);
@@ -113,7 +104,7 @@ impl Matrix {
     /// It does not handle all callback functions, so be careful when you want to use it.
     fn _recursive_solve(
         &mut self,
-        callback: &mut impl Callback,
+        callback: &mut impl Callback<Matrix>,
     ) {
         // === Task 1 ===
         // Handle callbacks
@@ -154,7 +145,7 @@ impl Matrix {
     }
 
     /// An iterative DLX algorithm.
-    fn iterative_solve(&mut self, callback: &mut impl Callback) {
+    fn iterative_solve(&mut self, callback: &mut impl Callback<Matrix>) {
         self.task_stack.push(1);
 
         while !self.task_stack.is_empty() {

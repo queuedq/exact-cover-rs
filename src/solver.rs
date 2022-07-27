@@ -4,8 +4,9 @@ use std::thread;
 use std::thread::{JoinHandle};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, TryRecvError, RecvError};
-// use crate::dlx::{Matrix, Callback};
-use crate::dlx_m::{Matrix, Callback};
+use crate::dlx::callback::{Callback};
+// use crate::dlx::dlx::{Matrix};
+use crate::dlx::dlx_m::{Matrix};
 use crate::problem::{Problem, Value};
 
 /// Events that a solver emits.
@@ -51,6 +52,8 @@ impl<N: Value, E: Value> Solver<N, E> {
         // TODO: validate problem
         Solver::generate_multi_matrix(problem)
     }
+
+    // TODO: use original algorithm if applicable
 
     // fn generate_exact_matrix(problem: &Problem<N, E>) -> Matrix {
     //     let constraints = problem.constraints();
@@ -216,7 +219,7 @@ impl ThreadCallback {
     }
 }
 
-impl Callback for ThreadCallback {
+impl Callback<Matrix> for ThreadCallback {
     fn on_solution(&mut self, sol: Vec<usize>, _mat: &mut Matrix) {
         self.event.send(SolverThreadEvent::SolutionFound(sol)).ok();
     }

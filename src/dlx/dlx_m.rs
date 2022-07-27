@@ -1,8 +1,8 @@
 //! A low-level API for dancing links (DLX) algorithm with multiplicity.
 //! 
 //! This module extends [`dlx`](crate::dlx) module to handle multiplicity.
-//! If you are looking for a [`Problem`](crate::problem::Problem) solver API,
-//! see the [`solver`](crate::solver) module.
+
+use crate::dlx::callback::{Callback};
 
 /// A single node of [`Matrix`].
 #[derive(Default, Debug)]
@@ -34,14 +34,6 @@ pub struct Matrix {
     _row_stack: Vec<usize>,
     _task_stack: Vec<usize>,
     abort_requested: bool,
-}
-
-/// An interface of callback objects to pass to the DLX algorithm.
-pub trait Callback {
-    fn on_solution(&mut self, _sol: Vec<usize>, _mat: &mut Matrix) {}
-    fn on_iteration(&mut self, _mat: &mut Matrix) {}
-    fn on_abort(&mut self, _mat: &mut Matrix) {}
-    fn on_finish(&mut self) {}
 }
 
 impl Default for Matrix {
@@ -122,7 +114,7 @@ impl Matrix {
 impl Matrix {
     pub fn solve(
         &mut self,
-        callback: &mut impl Callback,
+        callback: &mut impl Callback<Matrix>,
     ) {
         self.abort_requested = false;
         self._recursive_solve(callback);
@@ -134,7 +126,7 @@ impl Matrix {
     /// It does not handle all callback functions, so be careful when you want to use it.
     fn _recursive_solve(
         &mut self,
-        callback: &mut impl Callback,
+        callback: &mut impl Callback<Matrix>,
     ) {
         // Dancing links with multiplicity (Algorithm M)
         // ================

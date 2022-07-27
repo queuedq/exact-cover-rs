@@ -60,9 +60,6 @@
 pub mod vector;
 
 pub mod dlx;
-pub mod dlx_m;
-pub mod callback;
-
 pub mod problem;
 pub mod solver;
 

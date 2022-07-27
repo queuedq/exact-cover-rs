@@ -7,7 +7,7 @@
 use std::hash::Hash;
 use indexmap::{IndexMap};
 
-/// Base trait for subset names and constraints.
+/// Base trait for subset names and set elements.
 pub trait Value: Clone + Hash + Eq {}
 impl<T: Clone + Hash + Eq> Value for T {}
 
@@ -21,10 +21,7 @@ impl<T: Clone + Hash + Eq> Value for T {}
 /// 
 /// The order of the subsets and the elements is determined by the insertion order.
 /// It uses [`IndexMap`] internally to keep track of the order.
-/// 
-/// The subset order can affect the order of the solutions and
-/// the algorithm performance, but it would not be a significant effect
-/// as our algorithm uses the MRV heuristic.
+/// The subset order may affect the order of the solutions.
 #[derive(Clone)]
 #[cfg_attr(test, derive(Debug))]
 pub struct Problem<N: Value, E: Value> {
